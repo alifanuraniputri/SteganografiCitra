@@ -1,5 +1,7 @@
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
@@ -27,7 +29,8 @@ public class SteganografiProcessing {
 		super();
 		this.citra = chosen;
 		this.kunci = kunci;
-		this.pesan = pesan;
+		this.pesan = enkripsiASCII(pesan, kunci);
+		//this.pesan = pesan;
 		System.out.println(this.pesan);
 		this.seed = 0;
 		for (int i = 0; i < kunci.length(); i++) {
@@ -38,9 +41,11 @@ public class SteganografiProcessing {
 	}
 
 	public BufferedImage sisipkanLSBstandard() {
-		byte[] bytePesan = pesan.getBytes();
-		sisipkanPanjangPesan(pesan.length());
-		sisipkanPesanLSBStandard(bytePesan);
+		try {
+			byte[] bytePesan = pesan.getBytes("UTF-8");
+			sisipkanPanjangPesan(bytePesan.length);
+			sisipkanPesanLSBStandard(bytePesan);
+		} catch (Exception e) {}
 		return steganoCitra;
 	}
 
@@ -60,8 +65,7 @@ public class SteganografiProcessing {
 
 	public void getPlainLSB(int panjang) {
 		String bit = "";
-		byte b[] = new byte[panjang];
-		int nBit = b.length * 8;
+		int nBit = panjang * 8;
 		Random rand = new Random(this.seed);
 		int max = steganoCitra.getHeight() * steganoCitra.getWidth();
 		int min = 11;
@@ -80,6 +84,7 @@ public class SteganografiProcessing {
 		}
 
 		// ekstrak LSB
+		System.out.println("panjang: "+nBit);
 		int numBit = 0;
 		for (int i = 0; i < lokasi.length && numBit < nBit; i++) {
 			int x = lokasi[i] % steganoCitra.getWidth();
@@ -106,7 +111,10 @@ public class SteganografiProcessing {
 		System.out.println(bit);
 		byte[] bytes = new BigInteger(bit, 2).toByteArray();
 		try {
-			this.pesan = new String(bytes, "UTF-8");
+			this.pesan = new String(bytes, 1, panjang, "UTF-8");
+			System.out.println( Arrays.toString(bytes));
+			System.out.println(this.pesan);
+			this.pesan = dekripsiASCII(this.pesan, kunci);
 		} catch (Exception e) {
 
 		}
@@ -258,6 +266,7 @@ public class SteganografiProcessing {
 		for (int i = 0; i < plainArr.length; i++) {
 			cipher = cipher + Character.toString((char) (plainArr[i]));
 		}
+		System.out.println(cipher);
 		return cipher;
 	}
 
