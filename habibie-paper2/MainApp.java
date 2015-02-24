@@ -68,17 +68,20 @@ class PixelMapping {
 	}
 
 
-	public void insertStegoMessage(int x, int y, String partialBinaryString){
+	public void insertStegoMessage(int x, int y, char c, String partialBinaryString){
 		//bakal make overridePixel, untuk red saja
 		//System.out.println("P ("+x+","+y+") : "+partialBinaryString);	
 		for (int i=0; i<pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				PixelPosition PP = pixels.get(i);
-				int red = PP.color[0];
-				PP.color[0] = modifyPixel(red,partialBinaryString); //red doang
+				if (c == 'r'){
+					int red = PP.color[0];
+					PP.color[0] = modifyPixel(red,partialBinaryString); //red doang
+				}
+
 				pixels.set(i,PP);
-				//System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0'));	
-				break;			
+				System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+partialBinaryString.length());	
+				break;	
 			}
 		}	
 	}
@@ -87,7 +90,7 @@ class PixelMapping {
 		for (int i=0; i<pixels.size(); i++){
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				String temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[0])).replace(' ', '0');
-				//System.out.println("P ("+x+","+y+") : "+temPx);
+				System.out.println("P ("+x+","+y+") : "+temPx+" N : "+n);
 				return temPx.substring(8-n,8);
 			}	
 		}
@@ -216,6 +219,8 @@ class MainLogic {
 				String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
 				String pixelBit = temPx.substring(6,8);
 
+				System.out.println("ganti blok: ("+max_width+","+max_height+") : "+pixelBit);
+
 				if (pixelBit.matches("00")){
 					for (int h = min_height; h <= max_height; h++) {
 						for (int w = min_width; w <= max_width; w++) {
@@ -226,7 +231,7 @@ class MainLogic {
 								if (!((h == max_height) && (w == max_width))) {
 									readBinaryMsg += P.readStegoMessage(w,h,2);
 									local_count+=2;
-									
+									//System.out.println("LocalCount: "+local_count);
 								}
 							}
 						}
@@ -242,7 +247,7 @@ class MainLogic {
 								if (!((h == max_height) && (w == max_width))) {
 									readBinaryMsg += P.readStegoMessage(w,h,3);
 									local_count+=3;
-									
+									//System.out.println("LocalCount: "+local_count);
 								}
 							}
 						}
@@ -258,6 +263,7 @@ class MainLogic {
 								if (!((h == max_height) && (w == max_width))) {
 									readBinaryMsg += P.readStegoMessage(w,h,4);
 									local_count+=4;	
+									//System.out.println("LocalCount: "+local_count);
 								}
 							}
 						}
@@ -273,6 +279,7 @@ class MainLogic {
 								if (!((h == max_height) && (w == max_width))) {
 									readBinaryMsg += P.readStegoMessage(w,h,5);
 									local_count+=5;
+									//System.out.println("LocalCount: "+local_count);
 								}
 							}
 						}
@@ -285,20 +292,26 @@ class MainLogic {
 					}
 				}
 				*/
-
+				
 				min_width += 3;
 				max_width += 3;
 			}
-		}
 
+		}
+		readBinaryMsg = readBinaryMsg.substring(0,byte_count);
 		System.out.println("Biner terbaca: "+readBinaryMsg);
 		return readBinaryMsg;
+	}
+
+
+	public String readStegoNameFile(){
+		return "";
 	}
 
 	public void writeStegoSize(int size, int max_value){
 		//nulis di pixel terakhir
 		String temPx = String.format("%24s", Integer.toBinaryString(size)).replace(' ', '0');
-		System.out.println("Size binary: "+temPx);
+		//System.out.println("Size binary: "+temPx);
 
 		String red = temPx.substring(0,8);
 		String green = temPx.substring(8,16);
@@ -309,6 +322,10 @@ class MainLogic {
 	}
 
 	/* WriteStegoMessage */
+	public void writeStegoNameFile(){
+
+	}
+
 	public void writeStegoMessage(){
 		//increment setiap 3 pixel X dan 3 pixel Y
 		int min_width=0;
@@ -338,7 +355,7 @@ class MainLogic {
 				min_width = 0;
 				min_height+=3;
 				max_height+=3;
-			} else if (max_height > max_value) isStegoDone = true;
+			} else if (max_height > max_value-1) isStegoDone = true;
 			else{
 
 				int[] blocks = new int[9];
@@ -365,39 +382,49 @@ class MainLogic {
 				int movePointer;
 				/* Algoritma insertStego */
 
+				System.out.println("ganti blok: ("+max_width+","+max_height+") : "+d);
+				boolean isLewat = false;
 				for (int h = min_height; h <= max_height; h++) {
 					for (int w = min_width; w <= max_width; w++) {
 						if ((h == max_height) && (w == max_width)) {
 							if (d <= 7){	
-								P.insertStegoMessage(w,h,"00");	//2-lsb	
+								P.insertStegoMessage(w,h,'r',"00");	//2-lsb	
 							}
 							else if ((d >= 8) && (d <= 15)) {
-								P.insertStegoMessage(w,h,"01");	//3-lsb
+								P.insertStegoMessage(w,h,'r',"01");	//3-lsb
 							}
 							else if ((d >= 16) && (d <= 31)) {
-								P.insertStegoMessage(w,h,"10");	//4-lsb
+								P.insertStegoMessage(w,h,'r',"10");	//4-lsb
 							} else {
-								P.insertStegoMessage(w,h,"11");	//5-lsb
+								P.insertStegoMessage(w,h,'r',"11");	//5-lsb
 							}
 						} else {
-							if (d <= 7){	
-								movePointer = 2;		
-							}
-							else if ((d >= 8) && (d <= 15)) {
-								movePointer = 3;
-							}
-							else if ((d >= 16) && (d <= 31)) {
-								movePointer = 4;
-							} else {
-								movePointer = 5;
-							}
+							if (!isLewat) {
+								if (d <= 7){	
+									movePointer = 2;		
+								}
+								else if ((d >= 8) && (d <= 15)) {
+									movePointer = 3;
+								}
+								else if ((d >= 16) && (d <= 31)) {
+									movePointer = 4;
+								} else {
+									movePointer = 5;
+								}
 
-							msg_offset+=movePointer;
-							P.insertStegoMessage(w,h,msg.substring(msg_offset-movePointer,msg_offset));
+								msg_offset+=movePointer;
+								int selisih_error;
 
-							if (msg_offset >= msg_length) {
-								isStegoDone = true;
-								break;
+								if (msg_offset > msg_length){
+									P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_length));
+								} else {
+									P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_offset));
+								}
+
+								if (msg_offset >= msg_length) {
+									isStegoDone = true;
+									isLewat = true;
+								}
 							}
 							
 						}
@@ -406,6 +433,7 @@ class MainLogic {
 
 				//System.out.println("d("+max_width+","+max_height+") : "+d);
 				/* Naikkan widthnya */
+				
 				min_width += 3;
 				max_width += 3;
 
@@ -479,7 +507,7 @@ public class MainApp {
 			Scanner input = new Scanner(System.in);
 			System.out.print("File input (gambar): ");
 			//String lokasifile = input.nextLine();
-			String lokasifile = "cover1.png";
+			String lokasifile = "lenna.png";
 			ML.readImage(lokasifile);
 
 			System.out.print("File stego: ");
@@ -490,7 +518,7 @@ public class MainApp {
 
 			System.out.print("Nama file output: ");
 			//String outfile = input.nextLine();
-			String outfile = "cover2.png"; //output gambar stego
+			String outfile = "lenna2.png"; //output gambar stego
 
 			ML.writeImage(outfile);
 
