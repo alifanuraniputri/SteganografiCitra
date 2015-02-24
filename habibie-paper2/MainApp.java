@@ -71,6 +71,7 @@ class PixelMapping {
 	public void insertStegoMessage(int x, int y, char c, String partialBinaryString){
 		//bakal make overridePixel, untuk red saja
 		//System.out.println("P ("+x+","+y+") : "+partialBinaryString);	
+		int n-bit = partialBinaryString.length();
 		for (int i=0; i<pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				PixelPosition PP = pixels.get(i);
@@ -80,7 +81,7 @@ class PixelMapping {
 				}
 
 				pixels.set(i,PP);
-				System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+partialBinaryString.length());	
+				System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+n-bit);	
 				break;	
 			}
 		}	
@@ -445,7 +446,7 @@ class MainLogic {
 
 
 	/*Image Processing */
-	public void writeImage(String outfile){
+	public void writeImage(String outfile, String tipe){
 		try {
 			BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_INT_RGB);
 			WritableRaster raster = image.getRaster();
@@ -457,7 +458,7 @@ class MainLogic {
 				raster.setPixel(PPs.x,PPs.y,PPs.color);
 			}
 
-			ImageIO.write(image,"PNG",new File(outfile));
+			ImageIO.write(image,tipe,new File(outfile));
 		} catch (Exception e){e.printStackTrace();}
 	}
 
@@ -507,7 +508,7 @@ public class MainApp {
 			Scanner input = new Scanner(System.in);
 			System.out.print("File input (gambar): ");
 			//String lokasifile = input.nextLine();
-			String lokasifile = "lenna.png";
+			String lokasifile = "baboon_face.png";
 			ML.readImage(lokasifile);
 
 			System.out.print("File stego: ");
@@ -518,9 +519,9 @@ public class MainApp {
 
 			System.out.print("Nama file output: ");
 			//String outfile = input.nextLine();
-			String outfile = "lenna2.png"; //output gambar stego
+			String outfile = "baboon_face2.png"; //output gambar stego
 
-			ML.writeImage(outfile);
+			ML.writeImage(outfile,"png");
 
 			String str = ML.readStegoMessage();
 			ML.writeBinarytoFile("tulisan-out.txt",str);
