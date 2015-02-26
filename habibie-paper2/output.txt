@@ -710,3 +710,4 @@ P (3,2) : 00110111 N : 4
 P (4,2) : 00110100 N : 4
 Biner terbaca: 0111010001100101011100110111010000101110011101000111100001110100
 Filename tersimpan: test.txt
+Menulis file: test.txt-outfile

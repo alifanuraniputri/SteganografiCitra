@@ -152,9 +152,14 @@ class MainLogic {
 
 
 	public void readFiletoBinary(String infile){
-		str_file="";
 		try {
-			//ke str dlu
+			//Baca file, setelah itu dienkrip, lalu dijadikan byte[] kembali
+			/*
+			try {
+				Path path = Paths.get(infile);
+				fileData = Files.readAllBytes(path);
+			} catch (Exception e){}
+			*/
 
 			FileInputStream in = null;
 		    String str="";
@@ -172,10 +177,8 @@ class MainLogic {
 		        }
 		    }
 		 
-		 	for (int i=0;i<str.length();i++){
-				str_file = str_file + String.format("%8s", Integer.toBinaryString( CharToASCII (str.charAt(i)) )).replace(' ', '0');
-			}
-		 	//str_file = str;
+		 	str_file = str;
+		 	fileData = str.getBytes(Charset.forName("UTF-8"));
 	 	} catch (Exception e){}
 	}
 
@@ -183,7 +186,6 @@ class MainLogic {
 		return (int)character;
 	}
 
-	/*
 	public void debugByteInteger(){
 		System.out.println("EVALUATING...");
 		String hasil = "";
@@ -191,8 +193,15 @@ class MainLogic {
 			hasil = hasil + String.format("%8s", Integer.toBinaryString( CharToASCII (str_file.charAt(i)) )).replace(' ', '0');
 		}
 		System.out.println("HASIL DEBUG: "+hasil);
-	} */
+	}
 
+
+	public void writeBinarytoFile(String outfile){
+		try {
+			Path path = Paths.get(outfile);
+	    	Files.write(path, fileData); //creates, overwrites
+	    } catch (Exception e){e.printStackTrace();}
+	}
 
 	/* Konversi Binary String ke Binary Array and Vice Versa */
 	private String toBinary( byte[] bytes ) {
@@ -448,7 +457,7 @@ class MainLogic {
 		String msg;
 
 		if (file_name.equals("<ISI FILE>"))
-			msg = str_file;
+			msg = toBinary(fileData);
 		else{
 			byte[] encoded = file_name.getBytes(StandardCharsets.UTF_8);
 			msg = toBinary(encoded);
@@ -624,50 +633,12 @@ class MainLogic {
       } catch (Exception e) {e.printStackTrace();}
 	}
 
-
-	/* File processing 
-	public void writeFile(String lokasi, String str_out) {
+	/* File processing */
+	public void writeBinarytoFile(String outfile, String binstring){
 		try {
-			FileOutputStream out = null;
-			String output_str = str_out;
-			try {
-	        	out = new FileOutputStream(lokasi);
-	         
-	        	for (int i=0;i<output_str.length();i++){
-	        		char c = output_str.charAt(i);
-	        		out.write((int)c);
-	        	}
-	      
-	      	}finally {
-	        	if (out != null) {
-	        		out.close();
-	        	}
-	     	}
-	     }catch (Exception e){} 
-	} */
-
-	public void writeFile(String lokasi, String binstring){
-		System.out.println("Menulis file: "+lokasi);
-		try {
-			FileOutputStream out = null;
-			out = new FileOutputStream(lokasi);
-			boolean isDone = false;
-			String token="";
-			int i=0;
-
-			while (!isDone) {
-				if (token.length() >= 8) {
-					out.write(Integer.parseInt(token,2));
-					token = "";
-				}
-				else if (i >= binstring.length()) {
-					isDone = true;
-				} else {
-					token = token + binstring.charAt(i);
-					i++;
-				}
-			}
-		} catch (Exception e){}
+			Path path = Paths.get(outfile);
+	    	Files.write(path, fromBinary(binstring)); //creates, overwrites
+	    } catch (Exception e){e.printStackTrace();}
 	}
 
 }
@@ -692,7 +663,7 @@ public class MainApp {
 
 			System.out.print("File stego: ");
 			//String in = input.nextLine();
-			String in = "test.txt";
+			String in = "ajax.gif";
 			ML.readFiletoBinary(in);
 
 			ML.writeStegoMessage(in);
@@ -708,9 +679,9 @@ public class MainApp {
 			String str_filename = ML.readStegoMessage("-");
 
 			System.out.println("Filename tersimpan: "+str_filename);
-			ML.writeFile(str_filename+"-outfile",str);
+			ML.writeBinarytoFile(str_filename+"-outfile",str);
 
-			//ML.debugByteInteger();
+			ML.debugByteInteger();
 
 		}catch (Exception e){e.printStackTrace();}
 	}
