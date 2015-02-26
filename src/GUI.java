@@ -58,6 +58,7 @@ public class GUI extends JFrame {
 	private BufferedImage chosen;
 	private BufferedImage result;
 	private SteganografiProcessing stegano;
+	private FourDiffLSBSteganography stegano2;
 	private String pesan;
 	private String namaFile;
 	private String namaFileCitra;
@@ -66,9 +67,11 @@ public class GUI extends JFrame {
 	private final JScrollPane scrollPane = new JScrollPane();
 	private final JTextArea txtTeks = new JTextArea();
 	private final JButton btnNewButton = new JButton("Pilih File Pesan");
-	private final JButton btnBandingkan = new JButton("Bandingkan dengan Citra Asli");
+	private final JButton btnBandingkan = new JButton(
+			"Bandingkan dengan Citra Asli");
 	JFrame frameAsli = new JFrame("Citra Asli");
-	 JLabel lblImageAsli = new JLabel("image");
+	JLabel lblImageAsli = new JLabel("image");
+	File picture;
 
 	/**
 	 * Launch the application.
@@ -180,37 +183,37 @@ public class GUI extends JFrame {
 		lblVaiHabibie.setBounds(469, 454, 97, 14);
 
 		contentPane.add(lblVaiHabibie);
-		
+
 		radioMode1.setSelected(true);
 		radioMode1.setBackground(new Color(255, 240, 245));
 		radioMode1.setBounds(392, 189, 43, 23);
 		radioMode1.setMnemonic(KeyEvent.VK_C);
-		
+
 		radioMode1.addItemListener(new ItemListener() {
-	         public void itemStateChanged(ItemEvent e) {         
-	             mode=1;
-	          }           
-	       });
+			public void itemStateChanged(ItemEvent e) {
+				mode = 1;
+			}
+		});
 
 		contentPane.add(radioMode1);
 		radioMode2.setBackground(new Color(255, 240, 245));
 		radioMode2.setBounds(437, 189, 81, 23);
 		radioMode2.setMnemonic(KeyEvent.VK_M);
 		radioMode2.addItemListener(new ItemListener() {
-	         public void itemStateChanged(ItemEvent e) {         
-	             mode=2;
-	          }           
-	       });
+			public void itemStateChanged(ItemEvent e) {
+				mode = 2;
+			}
+		});
 
 		contentPane.add(radioMode2);
 		radioMode3.setBackground(new Color(255, 240, 245));
 		radioMode3.setBounds(520, 189, 137, 23);
 		radioMode3.setMnemonic(KeyEvent.VK_P);
 		radioMode3.addItemListener(new ItemListener() {
-	         public void itemStateChanged(ItemEvent e) {         
-	             mode=3;
-	          }           
-	       });
+			public void itemStateChanged(ItemEvent e) {
+				mode = 3;
+			}
+		});
 
 		ButtonGroup group = new ButtonGroup();
 		group.add(radioMode1);
@@ -241,34 +244,33 @@ public class GUI extends JFrame {
 		});
 		btnNewButton.setBackground(new Color(255, 105, 180));
 		btnNewButton.setBounds(392, 138, 243, 30);
-		
+
 		contentPane.add(btnNewButton);
-		
+
 		btnBandingkan.setEnabled(false);
 		btnBandingkan.setBounds(392, 391, 243, 23);
-		
-		contentPane.add(btnBandingkan);
-		
 
-	    frameAsli.setSize(320,320);
-	    frameAsli.setBounds(788, 100, 688, 556);
-	    JPanel panelAsli = new JPanel();
-	    panelAsli.setForeground(Color.WHITE);
-	    panelAsli.setBackground(new Color(255, 240, 245));
-	    panelAsli.setBorder(new EmptyBorder(5, 5, 5, 5));
-	    frameAsli.setContentPane(panelAsli);
-	    panelAsli.setLayout(null);
+		contentPane.add(btnBandingkan);
+
+		frameAsli.setSize(320, 320);
+		frameAsli.setBounds(788, 100, 688, 556);
+		JPanel panelAsli = new JPanel();
+		panelAsli.setForeground(Color.WHITE);
+		panelAsli.setBackground(new Color(255, 240, 245));
+		panelAsli.setBorder(new EmptyBorder(5, 5, 5, 5));
+		frameAsli.setContentPane(panelAsli);
+		panelAsli.setLayout(null);
 
 		btnBandingkan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 
 				frameAsli.setVisible(true);
-				
+
 				lblImageAsli.setOpaque(true);
 				lblImageAsli.setForeground(new Color(255, 105, 180));
 				lblImageAsli.setBounds(30, 76, 310, 310);
 				frameAsli.getContentPane().add(lblImageAsli);
-			
+
 				lblImageAsli.setIcon(new ImageIcon(chosen.getScaledInstance(
 						lblImageAsli.getWidth(), lblImageAsli.getHeight(),
 						BufferedImage.TRANSLUCENT)));
@@ -278,7 +280,7 @@ public class GUI extends JFrame {
 		});
 
 	}
-	
+
 	public void selectFile() {
 		EventQueue.invokeLater(new Runnable() {
 			@Override
@@ -288,32 +290,32 @@ public class GUI extends JFrame {
 				fileChooser.setBounds(0, -41, 582, 397);
 				fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
 				// Configure some more here
-				final int userValue = fileChooser
-						.showOpenDialog(fileChooser);
+				final int userValue = fileChooser.showOpenDialog(fileChooser);
 				if (userValue == JFileChooser.APPROVE_OPTION) {
 					final File plainTextFile = fileChooser.getSelectedFile();
 					namaFile = plainTextFile.getName();
-					//if (filename.substring(filename.lastIndexOf("."),filename.length()).equals("txt")) {
-						BufferedReader br;
-						try {
-							br = new BufferedReader(new FileReader(plainTextFile));
-					        StringBuilder sb = new StringBuilder();
-					        String line = br.readLine();
-		
-					        while (line != null) {
-					            sb.append(line);
-					            sb.append("\n");
-					            line = br.readLine();
-					        }
-					        pesan = sb.toString();
-					        txtTeks.setText(pesan);
-					        br.close();
+					// if
+					// (filename.substring(filename.lastIndexOf("."),filename.length()).equals("txt"))
+					// {
+					BufferedReader br;
+					try {
+						br = new BufferedReader(new FileReader(plainTextFile));
+						StringBuilder sb = new StringBuilder();
+						String line = br.readLine();
 
-						} catch (Exception e) {
-							e.printStackTrace();
+						while (line != null) {
+							sb.append(line);
+							sb.append("\n");
+							line = br.readLine();
 						}
-				    
-	
+						pesan = sb.toString();
+						txtTeks.setText(pesan);
+						br.close();
+
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
 				}
 			}
 		});
@@ -334,11 +336,10 @@ public class GUI extends JFrame {
 				// Configure some more here
 				final int userValue = fileChooser.showOpenDialog(fileChooser);
 				if (userValue == JFileChooser.APPROVE_OPTION) {
-					final File picture = fileChooser.getSelectedFile();
-					namaFileCitra= picture.getName();
+					picture = fileChooser.getSelectedFile();
+					namaFileCitra = picture.getName();
 					try {
 						chosen = ImageIO.read(picture);
-						
 
 					} catch (final IOException not_action) {
 						not_action.printStackTrace();
@@ -359,7 +360,7 @@ public class GUI extends JFrame {
 	}
 
 	public String bacaFilePesan(String fileName) {
-		
+
 		pesan = "";
 		BufferedReader br;
 		try {
@@ -387,13 +388,15 @@ public class GUI extends JFrame {
 		String kunci = textKey.getText();
 		if (!textKey.getText().equals("")) {
 			stegano = new SteganografiProcessing(chosen, kunci, namaFile);
+			stegano2 = new FourDiffLSBSteganography();
 			switch (mode) {
-			case 1: {
+			case 1: 
 				pesan = stegano.getPlainTextLSBstandard();
 				namaFile = stegano.getNamaFile();
-			}
-			case 2:
-				stegano.sisipkanLSBXinLiao();
+				break;
+			case 2: 
+				decode(); 
+				break;
 			case 3:
 				stegano.sisipkanLSBGhandarba();
 			}
@@ -407,16 +410,20 @@ public class GUI extends JFrame {
 	public void sisipkanPesan(int mode) {
 		String kunci = textKey.getText();
 		System.out.println(pesan);
-		if (pesan.length()!=0 && !textKey.getText().equals("")) {
-			if (((pesan.length()*namaFile.length()) * 8 + 11) <= (chosen.getHeight()
-					* chosen.getWidth() * 3)) {
-				
-				stegano = new SteganografiProcessing(chosen, kunci, pesan, namaFile);
+		if (pesan.length() != 0 && !textKey.getText().equals("")) {
+			if (((pesan.length() * namaFile.length()) * 8 + 11) <= (chosen
+					.getHeight() * chosen.getWidth() * 3)) {
+
+				stegano = new SteganografiProcessing(chosen, kunci, pesan,
+						namaFile);
+				stegano2 = new FourDiffLSBSteganography();
 				switch (mode) {
 				case 1:
-					result = stegano.sisipkanLSBstandard(); break;
+					result = stegano.sisipkanLSBstandard();
+					break;
 				case 2:
-					stegano.sisipkanLSBXinLiao(); break;
+					encode();
+					break;
 				case 3: {
 					try {
 						MainLogic ML = new MainLogic();
@@ -427,20 +434,22 @@ public class GUI extends JFrame {
 
 						ML.writeStegoMessage(in);
 						ML.writeStegoMessage("<ISI FILE>");
-						
+
 						result = ML.writeImage();
 
-						/*String str = ML.readStegoMessage("<ISI FILE>");
-						String str_filename = ML.readStegoMessage("-");
-
-						System.out.println("Filename tersimpan: "+str_filename);
-						ML.writeBinarytoFile(str_filename+"-outfile",str);*/
+						/*
+						 * String str = ML.readStegoMessage("<ISI FILE>");
+						 * String str_filename = ML.readStegoMessage("-");
+						 * 
+						 * System.out.println("Filename tersimpan: "+str_filename
+						 * ); ML.writeBinarytoFile(str_filename+"-outfile",str);
+						 */
 					} catch (Exception e) {
-						
+
 					}
-						
-						
-					}break;
+
+				}
+					break;
 				}
 				lblImage.setIcon(new ImageIcon(result.getScaledInstance(
 						lblImage.getWidth(), lblImage.getHeight(),
@@ -464,6 +473,19 @@ public class GUI extends JFrame {
 
 	}
 
+	private void encode() {
+		System.out.println("Nomer 2, Encode Pesan: " + pesan);
+		String path = picture.getPath();
+		
+		result = stegano2.encode(path, pesan);
+	}
+
+	private void decode() {
+		String message = stegano2.decode(picture.getPath());
+		System.out.println("Nomer 2, Ekstrak Pesan: " + message);
+		pesan = message;
+	}
+
 	public void simpanPlain() {
 		EventQueue.invokeLater(new Runnable() {
 			@Override
@@ -471,14 +493,13 @@ public class GUI extends JFrame {
 
 				final JFileChooser fileChooser = new JFileChooser();
 				fileChooser.setApproveButtonText("Save");
-				FileFilter filter = new FileNameExtensionFilter(
-						"file text", "txt");
+				FileFilter filter = new FileNameExtensionFilter("file text",
+						"txt");
 				fileChooser.setDialogTitle("Specify a file to save");
-				//fileChooser.setFileFilter(filter);
+				// fileChooser.setFileFilter(filter);
 				File f = new File(namaFile);
 				fileChooser.setSelectedFile(f);
 				final int userValue = fileChooser.showOpenDialog(null);
-				
 
 				if (userValue == JFileChooser.APPROVE_OPTION) {
 					File fileToSave = fileChooser.getSelectedFile();
@@ -550,115 +571,142 @@ class PixelPosition {
 }
 
 /*
-String by = Integer.toBinaryString(in)
-*/
+ * String by = Integer.toBinaryString(in)
+ */
 
 class PixelMapping {
 	public ArrayList<PixelPosition> pixels = new ArrayList<PixelPosition>();
 
-	public int getPixel(int x, int y, char ch) { //r saja
-		/* Algoritma search*/
-		for (int i=0; i<pixels.size(); i++) {
+	public int getPixel(int x, int y, char ch) { // r saja
+		/* Algoritma search */
+		for (int i = 0; i < pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
-				if (ch == 'r') return pixels.get(i).color[0];
-				else if (ch == 'g') return pixels.get(i).color[1];
-				else if (ch == 'b') return pixels.get(i).color[2];
+				if (ch == 'r')
+					return pixels.get(i).color[0];
+				else if (ch == 'g')
+					return pixels.get(i).color[1];
+				else if (ch == 'b')
+					return pixels.get(i).color[2];
 				else {
-					return (pixels.get(i).color[0] + pixels.get(i).color[1] + pixels.get(i).color[2])/3;
+					return (pixels.get(i).color[0] + pixels.get(i).color[1] + pixels
+							.get(i).color[2]) / 3;
 				}
 			}
 		}
 		return -1;
 	}
 
-	public int getRGBDecimal(int x, int y){
+	public int getRGBDecimal(int x, int y) {
 		return -1;
 	}
 
-	public void overridePixel(int x, int y, int r, int g, int b){
-		System.out.println("Tulis size ("+x+","+y+") : "+r+"-"+g+"-"+b);
-		for (int i=0; i<pixels.size(); i++) {
+	public void overridePixel(int x, int y, int r, int g, int b) {
+		System.out.println("Tulis size (" + x + "," + y + ") : " + r + "-" + g
+				+ "-" + b);
+		for (int i = 0; i < pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				PixelPosition PP = pixels.get(i);
 				PP.color[0] = r;
 				PP.color[1] = g;
 				PP.color[2] = b;
-				pixels.set(i,PP);
+				pixels.set(i, PP);
 				break;
 			}
 		}
 	}
 
-	public void insertPixel(int x, int y, int r, int g, int b){
+	public void insertPixel(int x, int y, int r, int g, int b) {
 		PixelPosition PP = new PixelPosition();
 		PP.x = x;
 		PP.y = y;
-		PP.color = new int[]{r,g,b};
+		PP.color = new int[] { r, g, b };
 
 		pixels.add(PP);
 	}
 
-
-	public void insertStegoMessage(int x, int y, char c, String partialBinaryString){
-		//bakal make overridePixel, untuk red saja
-		//System.out.println("P ("+x+","+y+") : "+partialBinaryString);	
+	public void insertStegoMessage(int x, int y, char c,
+			String partialBinaryString) {
+		// bakal make overridePixel, untuk red saja
+		// System.out.println("P ("+x+","+y+") : "+partialBinaryString);
 		int n_bit = partialBinaryString.length();
-		for (int i=0; i<pixels.size(); i++) {
+		for (int i = 0; i < pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				PixelPosition PP = pixels.get(i);
-				if (c == 'r'){
+				if (c == 'r') {
 					int red = PP.color[0];
-					PP.color[0] = modifyPixel(red,partialBinaryString); //red doang
-					System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+n_bit);	
-				} else if (c == 'g'){
+					PP.color[0] = modifyPixel(red, partialBinaryString); // red
+																			// doang
+					System.out.println("P ("
+							+ x
+							+ ","
+							+ y
+							+ ") -> "
+							+ String.format("%8s",
+									Integer.toBinaryString(PP.color[0]))
+									.replace(' ', '0') + " n: " + n_bit);
+				} else if (c == 'g') {
 					int green = PP.color[1];
-					PP.color[1] = modifyPixel(green,partialBinaryString); //green doang
-					System.out.println("I ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[1])).replace(' ', '0')+" n: "+n_bit);	
+					PP.color[1] = modifyPixel(green, partialBinaryString); // green
+																			// doang
+					System.out.println("I ("
+							+ x
+							+ ","
+							+ y
+							+ ") -> "
+							+ String.format("%8s",
+									Integer.toBinaryString(PP.color[1]))
+									.replace(' ', '0') + " n: " + n_bit);
 				}
 
-				pixels.set(i,PP);
-				
-				break;	
+				pixels.set(i, PP);
+
+				break;
 			}
-		}	
+		}
 	}
 
 	public String readStegoMessage(int x, int y, int n, char c) {
-		for (int i=0; i<pixels.size(); i++){
+		for (int i = 0; i < pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				String temPx;
 
 				if (c == 'r')
-					temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[0])).replace(' ', '0');
+					temPx = String.format("%8s",
+							Integer.toBinaryString(pixels.get(i).color[0]))
+							.replace(' ', '0');
 				else if (c == 'g')
-					temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[1])).replace(' ', '0');
+					temPx = String.format("%8s",
+							Integer.toBinaryString(pixels.get(i).color[1]))
+							.replace(' ', '0');
 				else
 					temPx = "";
 
-				System.out.println("P ("+x+","+y+") : "+temPx+" N : "+n);
-				return temPx.substring(8-n,8);
-			}	
+				System.out.println("P (" + x + "," + y + ") : " + temPx
+						+ " N : " + n);
+				return temPx.substring(8 - n, 8);
+			}
 		}
 		return "";
 	}
 
-	private static int modifyPixel(int pixels, String biner){
+	private static int modifyPixel(int pixels, String biner) {
 		int modifiedPx = 0;
-		String temPx = String.format("%8s", Integer.toBinaryString(pixels)).replace(' ', '0');
+		String temPx = String.format("%8s", Integer.toBinaryString(pixels))
+				.replace(' ', '0');
 
 		StringBuilder sb = new StringBuilder(temPx);
 
-		//System.out.println("Awal: "+temPx);
+		// System.out.println("Awal: "+temPx);
 		int pxLen = temPx.length();
 		int binLen = biner.length();
 
-		int count=0;
-		for (int i=(pxLen-binLen);i<pxLen;i++){
-			sb.setCharAt(i,biner.charAt(count));
+		int count = 0;
+		for (int i = (pxLen - binLen); i < pxLen; i++) {
+			sb.setCharAt(i, biner.charAt(count));
 			count++;
 		}
 
-		//System.out.println("Akhir: "+sb.toString());
+		// System.out.println("Akhir: "+sb.toString());
 		return Integer.parseInt(sb.toString(), 2);
 	}
 }
@@ -669,56 +717,64 @@ class MainLogic {
 	int height;
 	public byte[] fileData;
 
-	public MainLogic(){
-		P  = new PixelMapping();
+	public MainLogic() {
+		P = new PixelMapping();
 		width = 0;
 		height = 0;
 	}
 
 	/* Pembacaan File */
 
-	public void readFiletoBinary(String infile){
+	public void readFiletoBinary(String infile) {
 		try {
 			Path path = Paths.get(infile);
 			fileData = Files.readAllBytes(path);
-		} catch (Exception e){}
+		} catch (Exception e) {
+		}
 	}
 
-	public void writeBinarytoFile(String outfile){
+	public void writeBinarytoFile(String outfile) {
 		try {
 			Path path = Paths.get(outfile);
-	    	Files.write(path, fileData); //creates, overwrites
-	    } catch (Exception e){e.printStackTrace();}
+			Files.write(path, fileData); // creates, overwrites
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/* Konversi Binary String ke Binary Array and Vice Versa */
-	private String toBinary( byte[] bytes ) {
-	    StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
-	    for( int i = 0; i < Byte.SIZE * bytes.length; i++ )
-	        sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
-	    return sb.toString();
+	private String toBinary(byte[] bytes) {
+		StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
+		for (int i = 0; i < Byte.SIZE * bytes.length; i++)
+			sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0'
+					: '1');
+		return sb.toString();
 	}
 
-	private byte[] fromBinary( String s ) {
-	    int sLen = s.length();
-	    byte[] toReturn = new byte[(sLen + Byte.SIZE - 1) / Byte.SIZE];
-	    char c;
-	    for( int i = 0; i < sLen; i++ )
-	        if( (c = s.charAt(i)) == '1' )
-	            toReturn[i / Byte.SIZE] = (byte) (toReturn[i / Byte.SIZE] | (0x80 >>> (i % Byte.SIZE)));
-	        else if ( c != '0' )
-	            throw new IllegalArgumentException();
-	    return toReturn;
+	private byte[] fromBinary(String s) {
+		int sLen = s.length();
+		byte[] toReturn = new byte[(sLen + Byte.SIZE - 1) / Byte.SIZE];
+		char c;
+		for (int i = 0; i < sLen; i++)
+			if ((c = s.charAt(i)) == '1')
+				toReturn[i / Byte.SIZE] = (byte) (toReturn[i / Byte.SIZE] | (0x80 >>> (i % Byte.SIZE)));
+			else if (c != '0')
+				throw new IllegalArgumentException();
+		return toReturn;
 	}
 
-	public int readStegoSize(int max_value){
-		for (int i=0; i<P.pixels.size(); i++){
-			//System.out.println("Search : "+P.pixels.get(i).x+"-"+P.pixels.get(i).y);
-			if ((P.pixels.get(i).x == max_value) && (P.pixels.get(i).y == max_value)) {
+	public int readStegoSize(int max_value) {
+		for (int i = 0; i < P.pixels.size(); i++) {
+			// System.out.println("Search : "+P.pixels.get(i).x+"-"+P.pixels.get(i).y);
+			if ((P.pixels.get(i).x == max_value)
+					&& (P.pixels.get(i).y == max_value)) {
 				PixelPosition PP = P.pixels.get(i);
-				String red = String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0');
-				String green = String.format("%8s", Integer.toBinaryString(PP.color[1])).replace(' ', '0');
-				String blue = String.format("%8s", Integer.toBinaryString(PP.color[2])).replace(' ', '0');
+				String red = String.format("%8s",
+						Integer.toBinaryString(PP.color[0])).replace(' ', '0');
+				String green = String.format("%8s",
+						Integer.toBinaryString(PP.color[1])).replace(' ', '0');
+				String blue = String.format("%8s",
+						Integer.toBinaryString(PP.color[2])).replace(' ', '0');
 
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(red);
@@ -731,106 +787,124 @@ class MainLogic {
 		return -1;
 	}
 
-	public String readStegoMessage(String type){ //sementara jumlah biner yang harus diambil itu dihitung
+	public String readStegoMessage(String type) { // sementara jumlah biner yang
+													// harus diambil itu
+													// dihitung
 		try {
 			if (type.equals("<ISI FILE>"))
 				System.out.println("Membaca pesan stego (ISI FILE)...");
-			else 
+			else
 				System.out.println("Membaca pesan stego (JUDUL FILE)...");
 
-			int local_count=0;
+			int local_count = 0;
 			boolean isDone = false;
 
-			int min_width=0;
-			int max_width=2;
-			int min_height=0;
-			int max_height=2;
+			int min_width = 0;
+			int max_width = 2;
+			int min_height = 0;
+			int max_height = 2;
 
 			int max_value;
-			if (width > height) max_value = height;
-			else max_value = width;
+			if (width > height)
+				max_value = height;
+			else
+				max_value = width;
 
 			String readBinaryMsg = "";
 			int byte_count;
 
 			if (type.equals("<ISI FILE>"))
-				byte_count = readStegoSize(max_value-1);
+				byte_count = readStegoSize(max_value - 1);
 			else
-				byte_count = readStegoSize(max_value-2);
+				byte_count = readStegoSize(max_value - 2);
 
-			System.out.println("Message Size: "+byte_count);
+			System.out.println("Message Size: " + byte_count);
 
-			
-
-			while (!isDone){
-				if (max_width > max_value){
+			while (!isDone) {
+				if (max_width > max_value) {
 					max_width = 2;
 					min_width = 0;
-					min_height+=3;
-					max_height+=3;
-				} else if (max_height > max_value) isDone = true;
-				else{
-					int pxSignature = P.getPixel(max_width,max_height,'r'); //ambil bit ke-8
-					String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
-					String pixelBit = temPx.substring(6,8);
+					min_height += 3;
+					max_height += 3;
+				} else if (max_height > max_value)
+					isDone = true;
+				else {
+					int pxSignature = P.getPixel(max_width, max_height, 'r'); // ambil
+																				// bit
+																				// ke-8
+					String temPx = String.format("%8s",
+							Integer.toBinaryString(pxSignature)).replace(' ',
+							'0');
+					String pixelBit = temPx.substring(6, 8);
 
-					System.out.println("ganti blok: ("+max_width+","+max_height+") : "+pixelBit);
+					System.out.println("ganti blok: (" + max_width + ","
+							+ max_height + ") : " + pixelBit);
 
-					if (pixelBit.matches("00")){
+					if (pixelBit.matches("00")) {
 						for (int h = min_height; h <= max_height; h++) {
 							for (int w = min_width; w <= max_width; w++) {
 								if (local_count >= byte_count) {
-										isDone = true;
-										break;
-								}else {
+									isDone = true;
+									break;
+								} else {
 									if (!((h == max_height) && (w == max_width))) {
 										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,2,'r');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 2,
+															'r');
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,2,'g');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 2,
+															'g');
 
-										local_count+=2;
-										//System.out.println("LocalCount: "+local_count);
+										local_count += 2;
+										// System.out.println("LocalCount: "+local_count);
 									}
 								}
 							}
 						}
-					} else if (pixelBit.matches("01")){
+					} else if (pixelBit.matches("01")) {
 						for (int h = min_height; h <= max_height; h++) {
 							for (int w = min_width; w <= max_width; w++) {
 								if (local_count >= byte_count) {
-										isDone = true;
-										break;
-								}
-								else {
+									isDone = true;
+									break;
+								} else {
 									if (!((h == max_height) && (w == max_width))) {
 										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,3,'r');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 3,
+															'r');
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,3,'g');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 3,
+															'g');
 
-										local_count+=3;
-										//System.out.println("LocalCount: "+local_count);
+										local_count += 3;
+										// System.out.println("LocalCount: "+local_count);
 									}
 								}
 							}
 						}
-					} else if (pixelBit.matches("10")){
+					} else if (pixelBit.matches("10")) {
 						for (int h = min_height; h <= max_height; h++) {
 							for (int w = min_width; w <= max_width; w++) {
 								if (local_count >= byte_count) {
-										isDone = true;
-										break;
-								}
-								else {
+									isDone = true;
+									break;
+								} else {
 									if (!((h == max_height) && (w == max_width))) {
 										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,4,'r');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 4,
+															'r');
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,4,'g');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 4,
+															'g');
 
-										local_count+=4;	
-										//System.out.println("LocalCount: "+local_count);
+										local_count += 4;
+										// System.out.println("LocalCount: "+local_count);
 									}
 								}
 							}
@@ -839,150 +913,156 @@ class MainLogic {
 						for (int h = min_height; h <= max_height; h++) {
 							for (int w = min_width; w <= max_width; w++) {
 								if (local_count >= byte_count) {
-										isDone = true;
-										break;
-								}else {
+									isDone = true;
+									break;
+								} else {
 
 									if (!((h == max_height) && (w == max_width))) {
 										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,5,'r');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 5,
+															'r');
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,5,'g');
+											readBinaryMsg += P
+													.readStegoMessage(w, h, 5,
+															'g');
 
-										local_count+=5;
-										//System.out.println("LocalCount: "+local_count);
+										local_count += 5;
+										// System.out.println("LocalCount: "+local_count);
 									}
 								}
 							}
 						}
 					}
 					/*
-					for (int h = min_height; h <= max_height; h++) {
-						for (int w = min_width; w <= max_width; w++) {
+					 * for (int h = min_height; h <= max_height; h++) { for (int
+					 * w = min_width; w <= max_width; w++) {
+					 * 
+					 * } }
+					 */
 
-						}
-					}
-					*/
-					
 					min_width += 3;
 					max_width += 3;
 				}
 
 			}
-			readBinaryMsg = readBinaryMsg.substring(0,byte_count);
-			System.out.println("Biner terbaca: "+readBinaryMsg);
+			readBinaryMsg = readBinaryMsg.substring(0, byte_count);
+			System.out.println("Biner terbaca: " + readBinaryMsg);
 
 			if (type.equals("<ISI FILE>"))
 				return readBinaryMsg;
 			else
-				return new String(fromBinary(readBinaryMsg),"UTF-8");
-		}catch (Exception e){
+				return new String(fromBinary(readBinaryMsg), "UTF-8");
+		} catch (Exception e) {
 			e.printStackTrace();
 			return "";
 		}
 	}
 
-
-	public String readStegoNameFile(){
+	public String readStegoNameFile() {
 		return "";
 	}
 
-	public void writeStegoSize(int size, int max_value, int type){
-		//nulis di pixel terakhir
-		String temPx = String.format("%24s", Integer.toBinaryString(size)).replace(' ', '0');
-		//System.out.println("Size binary: "+temPx);
+	public void writeStegoSize(int size, int max_value, int type) {
+		// nulis di pixel terakhir
+		String temPx = String.format("%24s", Integer.toBinaryString(size))
+				.replace(' ', '0');
+		// System.out.println("Size binary: "+temPx);
 
-		String red = temPx.substring(0,8);
-		String green = temPx.substring(8,16);
-		String blue = temPx.substring(16,24);
+		String red = temPx.substring(0, 8);
+		String green = temPx.substring(8, 16);
+		String blue = temPx.substring(16, 24);
 
-		System.out.println("Size binary: "+red+green+blue);
-		if (type == 0) //0 maka nulis size dari file
-			P.overridePixel(max_value-1,max_value-1,Integer.parseInt(red, 2),Integer.parseInt(green, 2),Integer.parseInt(blue, 2));
+		System.out.println("Size binary: " + red + green + blue);
+		if (type == 0) // 0 maka nulis size dari file
+			P.overridePixel(max_value - 1, max_value - 1,
+					Integer.parseInt(red, 2), Integer.parseInt(green, 2),
+					Integer.parseInt(blue, 2));
 		else
-			P.overridePixel(max_value-2,max_value-2,Integer.parseInt(red, 2),Integer.parseInt(green, 2),Integer.parseInt(blue, 2));	
+			P.overridePixel(max_value - 2, max_value - 2,
+					Integer.parseInt(red, 2), Integer.parseInt(green, 2),
+					Integer.parseInt(blue, 2));
 	}
 
 	/* WriteStegoMessage */
 	/*
-	public void writeStegoNameFile(String filename){
-		byte[] encoded = filename.getBytes(StandardCharsets.UTF_8);
-		String binaryMsg = toBinary(encoded);
-		System.out.println("Write Namefile: "+binaryMsg);
+	 * public void writeStegoNameFile(String filename){ byte[] encoded =
+	 * filename.getBytes(StandardCharsets.UTF_8); String binaryMsg =
+	 * toBinary(encoded); System.out.println("Write Namefile: "+binaryMsg);
+	 * 
+	 * int min_width=0; int max_width=2; int min_height=0; int max_height=2;
+	 * 
+	 * int max_value; if (width > height) max_value = height; else max_value =
+	 * width;
+	 * 
+	 * writeStegoSize(binaryMsg.length(),max_value,1);
+	 * 
+	 * int msg_offset = 0;
+	 * 
+	 * 
+	 * }
+	 */
 
-		int min_width=0;
-		int max_width=2;
-		int min_height=0;
-		int max_height=2;
-
-		int max_value;
-		if (width > height) max_value = height;
-		else max_value = width;
-
-		writeStegoSize(binaryMsg.length(),max_value,1);
-
-		int msg_offset = 0;
-
-
-	} */
-
-	public void writeStegoMessage(String file_name){
-		//increment setiap 3 pixel X dan 3 pixel Y
+	public void writeStegoMessage(String file_name) {
+		// increment setiap 3 pixel X dan 3 pixel Y
 		if (file_name.equals("<ISI FILE>"))
 			System.out.println("MENULIS PESAN STEGO (ISI)...");
 		else
 			System.out.println("MENULIS PESAN STEGO (JUDUL)...");
 
-		int min_width=0;
-		int max_width=2;
-		int min_height=0;
-		int max_height=2;
+		int min_width = 0;
+		int max_width = 2;
+		int min_height = 0;
+		int max_height = 2;
 
 		int max_value;
-		if (width > height) max_value = height;
-		else max_value = width;
+		if (width > height)
+			max_value = height;
+		else
+			max_value = width;
 
 		String msg;
 
 		if (file_name.equals("<ISI FILE>"))
 			msg = toBinary(fileData);
-		else{
+		else {
 			byte[] encoded = file_name.getBytes(StandardCharsets.UTF_8);
 			msg = toBinary(encoded);
 		}
 
 		int msg_length = msg.length();
-		
-		if (file_name.equals("<ISI FILE>"))
-			writeStegoSize(msg_length,max_value,0);
-		else
-			writeStegoSize(msg_length,max_value,1);
 
-		System.out.println("Panjang Pesan: "+msg_length);
-		System.out.println("Biner terbaca: "+msg);
-		//System.out.println(bs.getBytes());
+		if (file_name.equals("<ISI FILE>"))
+			writeStegoSize(msg_length, max_value, 0);
+		else
+			writeStegoSize(msg_length, max_value, 1);
+
+		System.out.println("Panjang Pesan: " + msg_length);
+		System.out.println("Biner terbaca: " + msg);
+		// System.out.println(bs.getBytes());
 
 		int msg_offset = 0;
 
 		boolean isStegoDone = false;
 
-		while (!isStegoDone){
-			
-			if (max_width > max_value){
+		while (!isStegoDone) {
+
+			if (max_width > max_value) {
 				max_width = 2;
 				min_width = 0;
-				min_height+=3;
-				max_height+=3;
-			} else if (max_height > max_value-1) isStegoDone = true;
-			else{
+				min_height += 3;
+				max_height += 3;
+			} else if (max_height > max_value - 1)
+				isStegoDone = true;
+			else {
 
 				int[] blocks = new int[9];
-				int min_blocks=99999;
+				int min_blocks = 99999;
 
-				int count=0;
+				int count = 0;
 				for (int h = min_height; h <= max_height; h++) {
 					for (int w = min_width; w <= max_width; w++) {
-						blocks[count] = P.getPixel(h,w,'a');
+						blocks[count] = P.getPixel(h, w, 'a');
 
 						if (blocks[count] < min_blocks)
 							min_blocks = blocks[count];
@@ -992,7 +1072,7 @@ class MainLogic {
 				}
 
 				int jumlah_selisih = 0;
-				for (int y=0; y < count; y++){
+				for (int y = 0; y < count; y++) {
 					jumlah_selisih = jumlah_selisih + (blocks[y] - min_blocks);
 				}
 
@@ -1000,61 +1080,70 @@ class MainLogic {
 				int movePointer;
 				/* Algoritma insertStego */
 
-				System.out.println("ganti blok: ("+max_width+","+max_height+") : "+d);
+				System.out.println("ganti blok: (" + max_width + ","
+						+ max_height + ") : " + d);
 				boolean isLewat = false;
 				for (int h = min_height; h <= max_height; h++) {
 					for (int w = min_width; w <= max_width; w++) {
 						if ((h == max_height) && (w == max_width)) {
-							if (d <= 7){	
+							if (d <= 7) {
 								if (file_name.equals("<ISI FILE>"))
-									P.insertStegoMessage(w,h,'r',"00");	//2-lsb	
+									P.insertStegoMessage(w, h, 'r', "00"); // 2-lsb
 								else
-									P.insertStegoMessage(w,h,'g',"00");	//2-lsb
-							}
-							else if ((d >= 8) && (d <= 15)) {
+									P.insertStegoMessage(w, h, 'g', "00"); // 2-lsb
+							} else if ((d >= 8) && (d <= 15)) {
 								if (file_name.equals("<ISI FILE>"))
-									P.insertStegoMessage(w,h,'r',"01");	//3-lsb
+									P.insertStegoMessage(w, h, 'r', "01"); // 3-lsb
 								else
-									P.insertStegoMessage(w,h,'g',"01");	//3-lsb
-							}
-							else if ((d >= 16) && (d <= 31)) {
+									P.insertStegoMessage(w, h, 'g', "01"); // 3-lsb
+							} else if ((d >= 16) && (d <= 31)) {
 								if (file_name.equals("<ISI FILE>"))
-									P.insertStegoMessage(w,h,'r',"10");	//4-lsb
+									P.insertStegoMessage(w, h, 'r', "10"); // 4-lsb
 								else
-									P.insertStegoMessage(w,h,'g',"10");	//4-lsb
+									P.insertStegoMessage(w, h, 'g', "10"); // 4-lsb
 							} else {
 								if (file_name.equals("<ISI FILE>"))
-									P.insertStegoMessage(w,h,'r',"11");	//5-lsb
+									P.insertStegoMessage(w, h, 'r', "11"); // 5-lsb
 								else
-									P.insertStegoMessage(w,h,'g',"11");	//5-lsb
+									P.insertStegoMessage(w, h, 'g', "11"); // 5-lsb
 							}
 						} else {
 							if (!isLewat) {
-								if (d <= 7){	
-									movePointer = 2;		
-								}
-								else if ((d >= 8) && (d <= 15)) {
+								if (d <= 7) {
+									movePointer = 2;
+								} else if ((d >= 8) && (d <= 15)) {
 									movePointer = 3;
-								}
-								else if ((d >= 16) && (d <= 31)) {
+								} else if ((d >= 16) && (d <= 31)) {
 									movePointer = 4;
 								} else {
 									movePointer = 5;
 								}
 
-								msg_offset+=movePointer;
+								msg_offset += movePointer;
 								int selisih_error;
 
-								if (msg_offset > msg_length){
+								if (msg_offset > msg_length) {
 									if (file_name.equals("<ISI FILE>"))
-										P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_length));
+										P.insertStegoMessage(w, h, 'r', msg
+												.substring(msg_offset
+														- movePointer,
+														msg_length));
 									else
-										P.insertStegoMessage(w,h,'g',msg.substring(msg_offset-movePointer,msg_length));
+										P.insertStegoMessage(w, h, 'g', msg
+												.substring(msg_offset
+														- movePointer,
+														msg_length));
 								} else {
 									if (file_name.equals("<ISI FILE>"))
-										P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_offset));
+										P.insertStegoMessage(w, h, 'r', msg
+												.substring(msg_offset
+														- movePointer,
+														msg_offset));
 									else
-										P.insertStegoMessage(w,h,'g',msg.substring(msg_offset-movePointer,msg_offset));
+										P.insertStegoMessage(w, h, 'g', msg
+												.substring(msg_offset
+														- movePointer,
+														msg_offset));
 								}
 
 								if (msg_offset >= msg_length) {
@@ -1062,64 +1151,72 @@ class MainLogic {
 									isLewat = true;
 								}
 							}
-							
+
 						}
 					}
 				}
 
-				//System.out.println("d("+max_width+","+max_height+") : "+d);
+				// System.out.println("d("+max_width+","+max_height+") : "+d);
 				/* Naikkan widthnya */
-				
+
 				min_width += 3;
 				max_width += 3;
-
 
 			}
 		}
 
 	}
 
-
-	/*Image Processing */
-	public BufferedImage writeImage(){
+	/* Image Processing */
+	public BufferedImage writeImage() {
 		try {
-			BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_INT_RGB);
+			BufferedImage image = new BufferedImage(width, height,
+					BufferedImage.TYPE_INT_RGB);
 			WritableRaster raster = image.getRaster();
-			//System.out.println("Menulis Image");
-			//System.out.println("Height: "+height+" - Width: "+width);
+			// System.out.println("Menulis Image");
+			// System.out.println("Height: "+height+" - Width: "+width);
 
-			for (int i=0; i<P.pixels.size(); i++) {
+			for (int i = 0; i < P.pixels.size(); i++) {
 				PixelPosition PPs = P.pixels.get(i);
-				raster.setPixel(PPs.x,PPs.y,PPs.color);
+				raster.setPixel(PPs.x, PPs.y, PPs.color);
 			}
 
-			//ImageIO.write(image,tipe,new File(outfile));
+			// ImageIO.write(image,tipe,new File(outfile));
 			return image;
-		} catch (Exception e){e.printStackTrace(); return null;}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
-	public void readImage(BufferedImage image){
+	public void readImage(BufferedImage image) {
 		try {
-         width = image.getWidth();
-         height = image.getHeight();
-         
-         for(int i=0; i<height; i++){
-            for(int j=0; j<width; j++){
-               Color c = new Color(image.getRGB(j, i));
-               //System.out.println("Pos("+j+","+i+") ->   Red: " + c.getRed() +"  Green: " + c.getGreen() + " Blue: " + c.getBlue());
-               P.insertPixel(j,i,c.getRed(),c.getGreen(),c.getBlue()); //disimpan
-            }
-         }
-         System.out.println("Selesai membaca image...");
-      } catch (Exception e) {e.printStackTrace();}
+			width = image.getWidth();
+			height = image.getHeight();
+
+			for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+					Color c = new Color(image.getRGB(j, i));
+					// System.out.println("Pos("+j+","+i+") ->   Red: " +
+					// c.getRed() +"  Green: " + c.getGreen() + " Blue: " +
+					// c.getBlue());
+					P.insertPixel(j, i, c.getRed(), c.getGreen(), c.getBlue()); // disimpan
+				}
+			}
+			System.out.println("Selesai membaca image...");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/* File processing */
-	public void writeBinarytoFile(String outfile, String binstring){
+	public void writeBinarytoFile(String outfile, String binstring) {
 		try {
 			Path path = Paths.get(outfile);
-	    	Files.write(path, fromBinary(binstring)); //creates, overwrites
-	    } catch (Exception e){e.printStackTrace();}
+			Files.write(path, fromBinary(binstring)); // creates, overwrites
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

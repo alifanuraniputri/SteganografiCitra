@@ -225,6 +225,39 @@ public class Nomer2 extends JFrame {
 						"Error!", JOptionPane.INFORMATION_MESSAGE);
 				}
 			}
+			
+					/*
+		JFileChooser chooser = new JFileChooser();//"./");
+		FileNameExtensionFilter filter=new FileNameExtensionFilter("Images", "bmp", "jpg","png");
+        chooser.setFileFilter(filter);
+		if (chooser.showSaveDialog(GUI.this) == JFileChooser.APPROVE_OPTION){
+			
+			try{
+				String text = pesan;
+				String path = picture.getPath();//selectedFile.getPath();
+
+				if(stegano2.encode(path, chooser.getSelectedFile().getPath() + (chooser.getSelectedFile().getName().endsWith(".bmp") ? "" : ".bmp"), text))
+				{
+					JOptionPane.showMessageDialog(GUI.this, "The Image was encoded Successfully!", 
+						"Success", JOptionPane.INFORMATION_MESSAGE);
+				}
+				else
+				{
+					JOptionPane.showMessageDialog(GUI.this,  
+	"The Image could not be encoded!", 
+						"Error", JOptionPane.INFORMATION_MESSAGE);
+				}
+				
+			}
+			catch(Exception except) {
+				//msg if opening fails
+				JOptionPane.showMessageDialog(GUI.this,  
+	"The File cannot be opened!", 
+					"Error!", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		*/
+
 	}
 	
 	private void decode(){
