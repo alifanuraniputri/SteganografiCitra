@@ -12,9 +12,10 @@ public class SteganografiProcessing {
 	private BufferedImage steganoCitra;
 	private String kunci;
 	private String pesan;
+	private String namaFile;
 	private int seed;
 
-	public SteganografiProcessing(BufferedImage steganoCitra, String kunci) {
+	public SteganografiProcessing(BufferedImage steganoCitra, String kunci, String namaFile) {
 		super();
 		this.steganoCitra = steganoCitra;
 		this.kunci = kunci;
@@ -22,14 +23,15 @@ public class SteganografiProcessing {
 		for (int i = 0; i < kunci.length(); i++) {
 			this.seed += (int) kunci.charAt(i);
 		}
+		this.namaFile = namaFile;
 	}
 
 	public SteganografiProcessing(BufferedImage chosen, String kunci,
-			String pesan) {
+			String pesan, String namaFile) {
 		super();
 		this.citra = chosen;
 		this.kunci = kunci;
-		this.pesan = enkripsiASCII(pesan, kunci);
+		this.pesan = enkripsiASCII((namaFile+'@'+pesan), kunci);
 		//this.pesan = pesan;
 		System.out.println(this.pesan);
 		this.seed = 0;
@@ -111,14 +113,48 @@ public class SteganografiProcessing {
 		System.out.println(bit);
 		byte[] bytes = new BigInteger(bit, 2).toByteArray();
 		try {
-			this.pesan = new String(bytes, 1, panjang, "UTF-8");
+			pesan = new String(bytes, 1, panjang, "UTF-8");
 			System.out.println( Arrays.toString(bytes));
-			System.out.println(this.pesan);
-			this.pesan = dekripsiASCII(this.pesan, kunci);
+			System.out.println(pesan);
+			pesan = dekripsiASCII(pesan, kunci);
 		} catch (Exception e) {
 
 		}
+		namaFile = "";
+		boolean found = false;
+		for (int i=0; i<pesan.length() && found==false; i++) {
+			if (pesan.charAt(i)=='.' || pesan.charAt(i)=='@') {
+				found =true;
+			}
+			if (found==false) {
+				namaFile = namaFile + pesan.charAt(i);
+			}
+			if (found==true) {
+				if (pesan.charAt(i)=='.') {
+					namaFile=namaFile+'.';
+					boolean foundpesan = false;
+					for (int j=(i+1) ; j<pesan.length() && foundpesan==false; j++) {
+						if (pesan.charAt(j)=='@') {
+							foundpesan =true;
+						}
+						if (foundpesan==false) {
+							namaFile = namaFile + pesan.charAt(j);
+						}
+						if (foundpesan==true) {
+							pesan = pesan.substring(j+1);
+						}
+					}
+				} else {
+						pesan = pesan.substring(i+1);
+				}
+			}
+		}
 		System.out.println(this.pesan);
+		System.out.println("nama : "+namaFile);
+	}
+	
+	public String getNamaFile() {
+		return namaFile;
 	}
 
 	public int getPanjangPesan() {

@@ -56,6 +56,7 @@ public class GUI extends JFrame {
 	private BufferedImage result;
 	private SteganografiProcessing stegano;
 	private String pesan;
+	private String namaFile;
 	private int mode = 1;
 	private final JButton btnSimpanPlain = new JButton("Simpan Plain Teks");
 	private final JScrollPane scrollPane = new JScrollPane();
@@ -254,6 +255,7 @@ public class GUI extends JFrame {
 
 					try {
 						chosen = ImageIO.read(picture);
+						
 
 					} catch (final IOException not_action) {
 						not_action.printStackTrace();
@@ -273,6 +275,7 @@ public class GUI extends JFrame {
 	}
 
 	public String bacaFilePesan(String fileName) {
+		
 		pesan = "";
 		BufferedReader br;
 		try {
@@ -299,10 +302,12 @@ public class GUI extends JFrame {
 	public void getPlainText(int mode) {
 		String kunci = textKey.getText();
 		if (!textKey.getText().equals("")) {
-			stegano = new SteganografiProcessing(chosen, kunci);
+			stegano = new SteganografiProcessing(chosen, kunci, namaFile);
 			switch (mode) {
-			case 1:
+			case 1: {
 				pesan = stegano.getPlainTextLSBstandard();
+				namaFile = stegano.getNamaFile();
+			}
 			case 2:
 				stegano.sisipkanLSBXinLiao();
 			case 3:
@@ -318,13 +323,15 @@ public class GUI extends JFrame {
 	public void sisipkanPesan(int mode) {
 		String kunci = textKey.getText();
 		String pesan = "";
-
+		String fileName = textFile.getText();
+		File f = new File(fileName);
+		namaFile= f.getName();
 		if (!textFile.getText().equals("") && !textKey.getText().equals("")) {
-			if ((pesan.length() * 8 + 11) <= (chosen.getHeight()
+			if (((pesan.length()*namaFile.length()) * 8 + 11) <= (chosen.getHeight()
 					* chosen.getWidth() * 3)) {
-				String fileName = textFile.getText();
+				
 				pesan = bacaFilePesan(fileName);
-				stegano = new SteganografiProcessing(chosen, kunci, pesan);
+				stegano = new SteganografiProcessing(chosen, kunci, pesan, namaFile);
 				switch (mode) {
 				case 1:
 					result = stegano.sisipkanLSBstandard();
@@ -362,11 +369,13 @@ public class GUI extends JFrame {
 				final JFileChooser fileChooser = new JFileChooser();
 				fileChooser.setApproveButtonText("Save");
 				FileFilter filter = new FileNameExtensionFilter(
-						"input file text (.txt)", "txt");
+						"file text", "txt");
 				fileChooser.setDialogTitle("Specify a file to save");
-				fileChooser.setFileFilter(filter);
-
-				final int userValue = fileChooser.showOpenDialog(fileChooser);
+				//fileChooser.setFileFilter(filter);
+				File f = new File(namaFile);
+				fileChooser.setSelectedFile(f);
+				final int userValue = fileChooser.showOpenDialog(null);
+				
 
 				if (userValue == JFileChooser.APPROVE_OPTION) {
 					File fileToSave = fileChooser.getSelectedFile();
