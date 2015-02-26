@@ -10,6 +10,7 @@ import java.io.*;
 import javax.swing.JFrame;
 import java.util.*;
 import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 
 class PixelPosition {
 	public int x;
@@ -71,26 +72,39 @@ class PixelMapping {
 	public void insertStegoMessage(int x, int y, char c, String partialBinaryString){
 		//bakal make overridePixel, untuk red saja
 		//System.out.println("P ("+x+","+y+") : "+partialBinaryString);	
-		int n-bit = partialBinaryString.length();
+		int n_bit = partialBinaryString.length();
 		for (int i=0; i<pixels.size(); i++) {
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				PixelPosition PP = pixels.get(i);
 				if (c == 'r'){
 					int red = PP.color[0];
 					PP.color[0] = modifyPixel(red,partialBinaryString); //red doang
+					System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+n_bit);	
+				} else if (c == 'g'){
+					int green = PP.color[1];
+					PP.color[1] = modifyPixel(green,partialBinaryString); //green doang
+					System.out.println("I ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[1])).replace(' ', '0')+" n: "+n_bit);	
 				}
 
 				pixels.set(i,PP);
-				System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+n-bit);	
+				
 				break;	
 			}
 		}	
 	}
 
-	public String readStegoMessage(int x, int y, int n) {
+	public String readStegoMessage(int x, int y, int n, char c) {
 		for (int i=0; i<pixels.size(); i++){
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
-				String temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[0])).replace(' ', '0');
+				String temPx;
+
+				if (c == 'r')
+					temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[0])).replace(' ', '0');
+				else if (c == 'g')
+					temPx = String.format("%8s", Integer.toBinaryString(pixels.get(i).color[1])).replace(' ', '0');
+				else
+					temPx = "";
+
 				System.out.println("P ("+x+","+y+") : "+temPx+" N : "+n);
 				return temPx.substring(8-n,8);
 			}	
@@ -187,121 +201,155 @@ class MainLogic {
 		return -1;
 	}
 
-	public String readStegoMessage(){ //sementara jumlah biner yang harus diambil itu dihitung
-		System.out.println("Membaca pesan stego...");
-		int local_count=0;
-		boolean isDone = false;
+	public String readStegoMessage(String type){ //sementara jumlah biner yang harus diambil itu dihitung
+		try {
+			if (type.equals("<ISI FILE>"))
+				System.out.println("Membaca pesan stego (ISI FILE)...");
+			else 
+				System.out.println("Membaca pesan stego (JUDUL FILE)...");
 
-		int min_width=0;
-		int max_width=2;
-		int min_height=0;
-		int max_height=2;
+			int local_count=0;
+			boolean isDone = false;
 
-		int max_value;
-		if (width > height) max_value = height;
-		else max_value = width;
+			int min_width=0;
+			int max_width=2;
+			int min_height=0;
+			int max_height=2;
 
-		String readBinaryMsg = "";
-		int byte_count = readStegoSize(max_value-1);
+			int max_value;
+			if (width > height) max_value = height;
+			else max_value = width;
 
-		System.out.println("Message Size: "+byte_count);
+			String readBinaryMsg = "";
+			int byte_count;
 
-		
+			if (type.equals("<ISI FILE>"))
+				byte_count = readStegoSize(max_value-1);
+			else
+				byte_count = readStegoSize(max_value-2);
 
-		while (!isDone){
-			if (max_width > max_value){
-				max_width = 2;
-				min_width = 0;
-				min_height+=3;
-				max_height+=3;
-			} else if (max_height > max_value) isDone = true;
-			else{
-				int pxSignature = P.getPixel(max_width,max_height,'r'); //ambil bit ke-8
-				String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
-				String pixelBit = temPx.substring(6,8);
+			System.out.println("Message Size: "+byte_count);
 
-				System.out.println("ganti blok: ("+max_width+","+max_height+") : "+pixelBit);
+			
 
-				if (pixelBit.matches("00")){
-					for (int h = min_height; h <= max_height; h++) {
-						for (int w = min_width; w <= max_width; w++) {
-							if (local_count >= byte_count) {
-									isDone = true;
-									break;
-							}else {
-								if (!((h == max_height) && (w == max_width))) {
-									readBinaryMsg += P.readStegoMessage(w,h,2);
-									local_count+=2;
-									//System.out.println("LocalCount: "+local_count);
+			while (!isDone){
+				if (max_width > max_value){
+					max_width = 2;
+					min_width = 0;
+					min_height+=3;
+					max_height+=3;
+				} else if (max_height > max_value) isDone = true;
+				else{
+					int pxSignature = P.getPixel(max_width,max_height,'r'); //ambil bit ke-8
+					String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
+					String pixelBit = temPx.substring(6,8);
+
+					System.out.println("ganti blok: ("+max_width+","+max_height+") : "+pixelBit);
+
+					if (pixelBit.matches("00")){
+						for (int h = min_height; h <= max_height; h++) {
+							for (int w = min_width; w <= max_width; w++) {
+								if (local_count >= byte_count) {
+										isDone = true;
+										break;
+								}else {
+									if (!((h == max_height) && (w == max_width))) {
+										if (type.equals("<ISI FILE>"))
+											readBinaryMsg += P.readStegoMessage(w,h,2,'r');
+										else
+											readBinaryMsg += P.readStegoMessage(w,h,2,'g');
+
+										local_count+=2;
+										//System.out.println("LocalCount: "+local_count);
+									}
+								}
+							}
+						}
+					} else if (pixelBit.matches("01")){
+						for (int h = min_height; h <= max_height; h++) {
+							for (int w = min_width; w <= max_width; w++) {
+								if (local_count >= byte_count) {
+										isDone = true;
+										break;
+								}
+								else {
+									if (!((h == max_height) && (w == max_width))) {
+										if (type.equals("<ISI FILE>"))
+											readBinaryMsg += P.readStegoMessage(w,h,3,'r');
+										else
+											readBinaryMsg += P.readStegoMessage(w,h,3,'g');
+
+										local_count+=3;
+										//System.out.println("LocalCount: "+local_count);
+									}
+								}
+							}
+						}
+					} else if (pixelBit.matches("10")){
+						for (int h = min_height; h <= max_height; h++) {
+							for (int w = min_width; w <= max_width; w++) {
+								if (local_count >= byte_count) {
+										isDone = true;
+										break;
+								}
+								else {
+									if (!((h == max_height) && (w == max_width))) {
+										if (type.equals("<ISI FILE>"))
+											readBinaryMsg += P.readStegoMessage(w,h,4,'r');
+										else
+											readBinaryMsg += P.readStegoMessage(w,h,4,'g');
+
+										local_count+=4;	
+										//System.out.println("LocalCount: "+local_count);
+									}
+								}
+							}
+						}
+					} else {
+						for (int h = min_height; h <= max_height; h++) {
+							for (int w = min_width; w <= max_width; w++) {
+								if (local_count >= byte_count) {
+										isDone = true;
+										break;
+								}else {
+
+									if (!((h == max_height) && (w == max_width))) {
+										if (type.equals("<ISI FILE>"))
+											readBinaryMsg += P.readStegoMessage(w,h,5,'r');
+										else
+											readBinaryMsg += P.readStegoMessage(w,h,5,'g');
+
+										local_count+=5;
+										//System.out.println("LocalCount: "+local_count);
+									}
 								}
 							}
 						}
 					}
-				} else if (pixelBit.matches("01")){
+					/*
 					for (int h = min_height; h <= max_height; h++) {
 						for (int w = min_width; w <= max_width; w++) {
-							if (local_count >= byte_count) {
-									isDone = true;
-									break;
-							}
-							else {
-								if (!((h == max_height) && (w == max_width))) {
-									readBinaryMsg += P.readStegoMessage(w,h,3);
-									local_count+=3;
-									//System.out.println("LocalCount: "+local_count);
-								}
-							}
-						}
-					}
-				} else if (pixelBit.matches("10")){
-					for (int h = min_height; h <= max_height; h++) {
-						for (int w = min_width; w <= max_width; w++) {
-							if (local_count >= byte_count) {
-									isDone = true;
-									break;
-							}
-							else {
-								if (!((h == max_height) && (w == max_width))) {
-									readBinaryMsg += P.readStegoMessage(w,h,4);
-									local_count+=4;	
-									//System.out.println("LocalCount: "+local_count);
-								}
-							}
-						}
-					}
-				} else {
-					for (int h = min_height; h <= max_height; h++) {
-						for (int w = min_width; w <= max_width; w++) {
-							if (local_count >= byte_count) {
-									isDone = true;
-									break;
-							}else {
 
-								if (!((h == max_height) && (w == max_width))) {
-									readBinaryMsg += P.readStegoMessage(w,h,5);
-									local_count+=5;
-									//System.out.println("LocalCount: "+local_count);
-								}
-							}
 						}
 					}
+					*/
+					
+					min_width += 3;
+					max_width += 3;
 				}
-				/*
-				for (int h = min_height; h <= max_height; h++) {
-					for (int w = min_width; w <= max_width; w++) {
 
-					}
-				}
-				*/
-				
-				min_width += 3;
-				max_width += 3;
 			}
+			readBinaryMsg = readBinaryMsg.substring(0,byte_count);
+			System.out.println("Biner terbaca: "+readBinaryMsg);
 
+			if (type.equals("<ISI FILE>"))
+				return readBinaryMsg;
+			else
+				return new String(fromBinary(readBinaryMsg),"UTF-8");
+		}catch (Exception e){
+			e.printStackTrace();
+			return "";
 		}
-		readBinaryMsg = readBinaryMsg.substring(0,byte_count);
-		System.out.println("Biner terbaca: "+readBinaryMsg);
-		return readBinaryMsg;
 	}
 
 
@@ -309,7 +357,7 @@ class MainLogic {
 		return "";
 	}
 
-	public void writeStegoSize(int size, int max_value){
+	public void writeStegoSize(int size, int max_value, int type){
 		//nulis di pixel terakhir
 		String temPx = String.format("%24s", Integer.toBinaryString(size)).replace(' ', '0');
 		//System.out.println("Size binary: "+temPx);
@@ -319,16 +367,19 @@ class MainLogic {
 		String blue = temPx.substring(16,24);
 
 		System.out.println("Size binary: "+red+green+blue);
-		P.overridePixel(max_value-1,max_value-1,Integer.parseInt(red, 2),Integer.parseInt(green, 2),Integer.parseInt(blue, 2));
+		if (type == 0) //0 maka nulis size dari file
+			P.overridePixel(max_value-1,max_value-1,Integer.parseInt(red, 2),Integer.parseInt(green, 2),Integer.parseInt(blue, 2));
+		else
+			P.overridePixel(max_value-2,max_value-2,Integer.parseInt(red, 2),Integer.parseInt(green, 2),Integer.parseInt(blue, 2));	
 	}
 
 	/* WriteStegoMessage */
-	public void writeStegoNameFile(){
+	/*
+	public void writeStegoNameFile(String filename){
+		byte[] encoded = filename.getBytes(StandardCharsets.UTF_8);
+		String binaryMsg = toBinary(encoded);
+		System.out.println("Write Namefile: "+binaryMsg);
 
-	}
-
-	public void writeStegoMessage(){
-		//increment setiap 3 pixel X dan 3 pixel Y
 		int min_width=0;
 		int max_width=2;
 		int min_height=0;
@@ -338,11 +389,47 @@ class MainLogic {
 		if (width > height) max_value = height;
 		else max_value = width;
 
-		String msg = toBinary(fileData);
+		writeStegoSize(binaryMsg.length(),max_value,1);
+
+		int msg_offset = 0;
+
+
+	} */
+
+	public void writeStegoMessage(String file_name){
+		//increment setiap 3 pixel X dan 3 pixel Y
+		if (file_name.equals("<ISI FILE>"))
+			System.out.println("MENULIS PESAN STEGO (ISI)...");
+		else
+			System.out.println("MENULIS PESAN STEGO (JUDUL)...");
+
+		int min_width=0;
+		int max_width=2;
+		int min_height=0;
+		int max_height=2;
+
+		int max_value;
+		if (width > height) max_value = height;
+		else max_value = width;
+
+		String msg;
+
+		if (file_name.equals("<ISI FILE>"))
+			msg = toBinary(fileData);
+		else{
+			byte[] encoded = file_name.getBytes(StandardCharsets.UTF_8);
+			msg = toBinary(encoded);
+		}
+
 		int msg_length = msg.length();
-		writeStegoSize(msg_length,max_value);
+		
+		if (file_name.equals("<ISI FILE>"))
+			writeStegoSize(msg_length,max_value,0);
+		else
+			writeStegoSize(msg_length,max_value,1);
+
 		System.out.println("Panjang Pesan: "+msg_length);
-		System.out.println("Biner terbaca: "+toBinary(fileData));
+		System.out.println("Biner terbaca: "+msg);
 		//System.out.println(bs.getBytes());
 
 		int msg_offset = 0;
@@ -389,15 +476,27 @@ class MainLogic {
 					for (int w = min_width; w <= max_width; w++) {
 						if ((h == max_height) && (w == max_width)) {
 							if (d <= 7){	
-								P.insertStegoMessage(w,h,'r',"00");	//2-lsb	
+								if (file_name.equals("<ISI FILE>"))
+									P.insertStegoMessage(w,h,'r',"00");	//2-lsb	
+								else
+									P.insertStegoMessage(w,h,'g',"00");	//2-lsb
 							}
 							else if ((d >= 8) && (d <= 15)) {
-								P.insertStegoMessage(w,h,'r',"01");	//3-lsb
+								if (file_name.equals("<ISI FILE>"))
+									P.insertStegoMessage(w,h,'r',"01");	//3-lsb
+								else
+									P.insertStegoMessage(w,h,'g',"01");	//3-lsb
 							}
 							else if ((d >= 16) && (d <= 31)) {
-								P.insertStegoMessage(w,h,'r',"10");	//4-lsb
+								if (file_name.equals("<ISI FILE>"))
+									P.insertStegoMessage(w,h,'r',"10");	//4-lsb
+								else
+									P.insertStegoMessage(w,h,'g',"10");	//4-lsb
 							} else {
-								P.insertStegoMessage(w,h,'r',"11");	//5-lsb
+								if (file_name.equals("<ISI FILE>"))
+									P.insertStegoMessage(w,h,'r',"11");	//5-lsb
+								else
+									P.insertStegoMessage(w,h,'g',"11");	//5-lsb
 							}
 						} else {
 							if (!isLewat) {
@@ -417,9 +516,15 @@ class MainLogic {
 								int selisih_error;
 
 								if (msg_offset > msg_length){
-									P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_length));
+									if (file_name.equals("<ISI FILE>"))
+										P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_length));
+									else
+										P.insertStegoMessage(w,h,'g',msg.substring(msg_offset-movePointer,msg_length));
 								} else {
-									P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_offset));
+									if (file_name.equals("<ISI FILE>"))
+										P.insertStegoMessage(w,h,'r',msg.substring(msg_offset-movePointer,msg_offset));
+									else
+										P.insertStegoMessage(w,h,'g',msg.substring(msg_offset-movePointer,msg_offset));
 								}
 
 								if (msg_offset >= msg_length) {
@@ -515,7 +620,9 @@ public class MainApp {
 			//String in = input.nextLine();
 			String in = "test.txt";
 			ML.readFiletoBinary(in);
-			ML.writeStegoMessage();
+
+			ML.writeStegoMessage(in);
+			ML.writeStegoMessage("<ISI FILE>");
 
 			System.out.print("Nama file output: ");
 			//String outfile = input.nextLine();
@@ -523,8 +630,11 @@ public class MainApp {
 
 			ML.writeImage(outfile,"png");
 
-			String str = ML.readStegoMessage();
-			ML.writeBinarytoFile("tulisan-out.txt",str);
+			String str = ML.readStegoMessage("<ISI FILE>");
+			String str_filename = ML.readStegoMessage("-");
+
+			System.out.println("Filename tersimpan: "+str_filename);
+			ML.writeBinarytoFile(str_filename+"-outfile",str);
 
 		}catch (Exception e){e.printStackTrace();}
 	}
