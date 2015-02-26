@@ -151,7 +151,7 @@ class MainLogic {
 	/* Pembacaan File */
 
 
-	public void readFiletoBinary(String infile){
+	public void readFiletoBinary(String infile, String key){
 		str_file="";
 		try {
 			//ke str dlu
@@ -171,10 +171,15 @@ class MainLogic {
 		            in.close();
 		        }
 		    }
-		 
+
+		    str = VigenereExtended.Enkrip(key,str);
+		 	//System.out.println("Setelah enkrip-asli: "+str);
+
 		 	for (int i=0;i<str.length();i++){
 				str_file = str_file + String.format("%8s", Integer.toBinaryString( CharToASCII (str.charAt(i)) )).replace(' ', '0');
 			}
+
+			
 		 	//str_file = str;
 	 	} catch (Exception e){}
 	}
@@ -182,17 +187,6 @@ class MainLogic {
 	private static int CharToASCII(final char character){
 		return (int)character;
 	}
-
-	/*
-	public void debugByteInteger(){
-		System.out.println("EVALUATING...");
-		String hasil = "";
-		for (int i=0;i<str_file.length();i++){
-			hasil = hasil + String.format("%8s", Integer.toBinaryString( CharToASCII (str_file.charAt(i)) )).replace(' ', '0');
-		}
-		System.out.println("HASIL DEBUG: "+hasil);
-	} */
-
 
 	/* Konversi Binary String ke Binary Array and Vice Versa */
 	private String toBinary( byte[] bytes ) {
@@ -646,28 +640,48 @@ class MainLogic {
 	     }catch (Exception e){} 
 	} */
 
-	public void writeFile(String lokasi, String binstring){
-		System.out.println("Menulis file: "+lokasi);
-		try {
-			FileOutputStream out = null;
-			out = new FileOutputStream(lokasi);
-			boolean isDone = false;
-			String token="";
-			int i=0;
-
-			while (!isDone) {
-				if (token.length() >= 8) {
-					out.write(Integer.parseInt(token,2));
-					token = "";
-				}
-				else if (i >= binstring.length()) {
-					isDone = true;
-				} else {
-					token = token + binstring.charAt(i);
-					i++;
-				}
+	public void writeFile(String lokasi, String inject_file, String key) throws Exception {
+		String plain="";
+		String token="";
+		boolean isDone=false;
+		int i=0;
+		while (!isDone) {
+			if (token.length() >= 8) {
+				plain = plain + (char)Integer.parseInt(token,2);
+				token = "";
 			}
-		} catch (Exception e){}
+			else if (i >= inject_file.length()) {
+				isDone = true;
+			} else {
+				token = token + inject_file.charAt(i);
+				i++;
+			}
+		}
+
+		//System.out.println("String setelah diambil: "+plain);
+
+		FileOutputStream out = null;
+		String output_str = VigenereExtended.Dekrip(key,plain);
+
+		try {
+        	out = new FileOutputStream(lokasi);
+         
+        	for (int j=0;j<output_str.length();j++){
+        		char c = output_str.charAt(j);
+        		out.write((int)c);
+        	}
+         	/*
+        	int c;
+        	while ((c = in.read()) != -1) {
+        		str = str + ((char)c);
+        		out.write(c);
+        	}*/
+      
+      	}finally {
+        	if (out != null) {
+        		out.close();
+        	}
+     	}
 	}
 
 }
@@ -683,6 +697,7 @@ public class MainApp {
 			System.setOut(out);
 
 			MainLogic ML = new MainLogic();
+			String key = "Alifa - Habibie - Rivai";
 
 			Scanner input = new Scanner(System.in);
 			System.out.print("File input (gambar): ");
@@ -692,8 +707,10 @@ public class MainApp {
 
 			System.out.print("File stego: ");
 			//String in = input.nextLine();
-			String in = "test.txt";
-			ML.readFiletoBinary(in);
+			String in = "in.zip";
+			
+
+			ML.readFiletoBinary(in,key);
 
 			ML.writeStegoMessage(in);
 			ML.writeStegoMessage("<ISI FILE>");
@@ -708,7 +725,7 @@ public class MainApp {
 			String str_filename = ML.readStegoMessage("-");
 
 			System.out.println("Filename tersimpan: "+str_filename);
-			ML.writeFile(str_filename+"-outfile",str);
+			ML.writeFile(str_filename+"-outfile",str,key);
 
 			//ML.debugByteInteger();
 
