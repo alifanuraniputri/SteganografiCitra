@@ -140,7 +140,7 @@ class MainLogic {
 	
 	//public byte[] fileData;
 	
-	public String str_file;
+	public String str_file; //binary string
 
 	public MainLogic(){
 		P  = new PixelMapping();

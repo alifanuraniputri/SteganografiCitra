@@ -133,7 +133,7 @@ public class FourDiffLSBSteganography {
 		return image2;
 	}
 
-	public byte[] extract(byte[] image, int imageType) {
+	public byte[][] extract(byte[] image, int imageType) {
 		int length = 0;
 		
 		int[] lastBlock = new int[]{0,0,0};
@@ -186,7 +186,8 @@ public class FourDiffLSBSteganography {
 		ret[0] = result;
 		ret[1] = fileNameresult;
 		
-		return result;
+		return ret;
+		//return result;
 	}
 	
 	private byte[] FourDiffLSB(int numByteToExtract, int[] byteOffset, int[] lastBlock, byte[][] grey, byte[][] alpha, byte[][] blue, byte[][] green, byte[][] red, int imageType){
@@ -258,8 +259,8 @@ public class FourDiffLSBSteganography {
 		return(setImage(image,new File(outputFilepath),"png"));
 	}
 
-	public String decode(String imageFilepath) {
-		byte[] decode;
+	public String[] decode(String imageFilepath) {
+		byte[][] decode;
 		try
 		{
 			BufferedImage image  = getImage(imageFilepath);
@@ -267,7 +268,8 @@ public class FourDiffLSBSteganography {
 			imageHeight = image.getHeight();
 			
 			decode = extract(getByteData(image), image.getType());
-			return(new String(decode));
+			//decode[0] = message, decode[1] = fileName
+			return(new String[]{new String(decode[0]), new String(decode[1])});
 		}
         catch(Exception e)
         {
@@ -275,7 +277,7 @@ public class FourDiffLSBSteganography {
 			JOptionPane.showMessageDialog(null, 
 				"There is no hidden message in this image!","Error",
 				JOptionPane.ERROR_MESSAGE);
-			return "";
+			return new String[]{"",""};
         }
 	}
 	

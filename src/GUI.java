@@ -12,6 +12,8 @@ import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -73,6 +75,7 @@ public class GUI extends JFrame {
 	JLabel lblImageAsli = new JLabel("image");
 	File picture;
 	String kunci = "";
+	private final JButton btnAnalisisPnsr = new JButton("Analisis PSNR");
 
 	/**
 	 * Launch the application.
@@ -177,11 +180,11 @@ public class GUI extends JFrame {
 
 		contentPane.add(btnSimpanCitra);
 		lblTubesIfKriptografi.setForeground(new Color(255, 20, 147));
-		lblTubesIfKriptografi.setBounds(449, 425, 135, 30);
+		lblTubesIfKriptografi.setBounds(448, 451, 135, 30);
 
 		contentPane.add(lblTubesIfKriptografi);
 		lblVaiHabibie.setForeground(new Color(255, 20, 147));
-		lblVaiHabibie.setBounds(469, 454, 97, 14);
+		lblVaiHabibie.setBounds(468, 480, 97, 14);
 
 		contentPane.add(lblVaiHabibie);
 
@@ -252,6 +255,10 @@ public class GUI extends JFrame {
 		btnBandingkan.setBounds(392, 391, 243, 23);
 
 		contentPane.add(btnBandingkan);
+		btnAnalisisPnsr.setEnabled(false);
+		btnAnalisisPnsr.setBounds(392, 425, 243, 23);
+		
+		contentPane.add(btnAnalisisPnsr);
 
 		frameAsli.setSize(320, 320);
 		frameAsli.setBounds(688, 100, 350, 375);
@@ -300,6 +307,7 @@ public class GUI extends JFrame {
 					// {
 					BufferedReader br;
 					try {
+						/*
 						br = new BufferedReader(new FileReader(plainTextFile));
 						StringBuilder sb = new StringBuilder();
 						String line = br.readLine();
@@ -309,9 +317,18 @@ public class GUI extends JFrame {
 							sb.append("\n");
 							line = br.readLine();
 						}
-						pesan = sb.toString();
+						*/
+						try {
+							FileInputStream fs = new FileInputStream(plainTextFile);
+							int c;
+					        while ((c = fs.read()) != -1) {
+					        	pesan = pesan+ ((char)c);
+					        }
+						} catch (Exception e) {
+							
+						}
 						txtTeks.setText(pesan);
-						br.close();
+						
 
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -358,6 +375,8 @@ public class GUI extends JFrame {
 		});
 		btnSisipkan.setEnabled(true);
 		btnEkstrakPesan.setEnabled(true);
+		btnBandingkan.setEnabled(false);
+		btnAnalisisPnsr.setEnabled(false);
 	}
 
 	public String bacaFilePesan(String fileName) {
@@ -392,10 +411,7 @@ public class GUI extends JFrame {
 			stegano2 = new FourDiffLSBSteganography();
 			switch (mode) {
 			case 1:
-				if (chosen.getType()==BufferedImage.TYPE_BYTE_GRAY)
-					pesan = stegano.getPlainTextLSBstandard8bit();
-				else
-					pesan = stegano.getPlainTextLSBstandard();
+				pesan = stegano.getPlainTextLSBstandard();
 				namaFile = stegano.getNamaFile();
 				break;
 			case 2:
@@ -430,11 +446,7 @@ public class GUI extends JFrame {
 				stegano2 = new FourDiffLSBSteganography();
 				switch (mode) {
 				case 1:
-					if (chosen.getType()==BufferedImage.TYPE_BYTE_GRAY) {
-						result = stegano.sisipkanLSBstandard8bit();
-					}
-					else
-						result = stegano.sisipkanLSBstandard();
+					result = stegano.sisipkanLSBstandard();
 					break;
 				case 2:
 					encode();
@@ -465,6 +477,7 @@ public class GUI extends JFrame {
 				JOptionPane.showMessageDialog(getContentPane(),
 						"pesan telah disisipkan");
 				btnBandingkan.setEnabled(true);
+				btnAnalisisPnsr.setEnabled(true);
 				btnEkstrakPesan.setEnabled(false);
 				btnSimpanCitra.setEnabled(true);
 			
@@ -481,14 +494,16 @@ public class GUI extends JFrame {
 		
 		//pesan = SteganografiProcessing.enkripsiASCII(pesan, kunci);
 
-		result = stegano2.encode(path, pesan, "tes");
+		result = stegano2.encode(path, namaFile, pesan);
 	}
 
 	private void decode() {
-		String message = stegano2.decode(picture.getPath());
-		System.out.println("Nomer 2, Ekstrak Pesan: " + message);
+		String[] res = stegano2.decode(picture.getPath());
+		System.out.println("Nomer 2, Ekstrak Pesan: " + res[0]);
+		System.out.println("Nomer 2, Nama File Pesan: " + res[1]);
 		
-		pesan = message;
+		pesan = res[0];
+		namaFile = res[1];
 		//pesan = SteganografiProcessing.dekripsiASCII(message, kunci);
 	}
 
@@ -510,21 +525,20 @@ public class GUI extends JFrame {
 				if (userValue == JFileChooser.APPROVE_OPTION) {
 					File fileToSave = fileChooser.getSelectedFile();
 
-					BufferedWriter writer = null;
+					
 					try {
-						writer = new BufferedWriter(new FileWriter(fileChooser
-								.getSelectedFile()));
-						writer.write(pesan);
-
-					} catch (IOException e) {
+						FileOutputStream out = new FileOutputStream(fileChooser.getSelectedFile());
+				         
+			        	for (int j=0;j<pesan.length();j++){
+			        		char c = pesan.charAt(j);
+			        		out.write((int)c);
+			        	}
+					} catch (Exception e) {
 					} finally {
-						try {
-							if (writer != null)
-								writer.close();
+						
 							JOptionPane.showMessageDialog(getContentPane(),
 									"file saved");
-						} catch (IOException e) {
-						}
+					
 					}
 
 				}

@@ -30,7 +30,7 @@ public class SteganografiProcessing {
 		super();
 		this.citra = chosen;
 		this.kunci = kunci;
-		this.pesan = enkripsiASCII((namaFile+'@'+pesan), kunci);
+		this.pesan = VigenereExtended.Enkrip(kunci,(namaFile+'@'+pesan));
 		//this.pesan = pesan;
 		System.out.println(this.pesan);
 		this.seed = 0;
@@ -41,6 +41,7 @@ public class SteganografiProcessing {
 	}
 
 	public BufferedImage sisipkanLSBstandard() {
+		//
 		try {
 			steganoCitra = new BufferedImage(citra.getWidth(), citra.getHeight(),
 					BufferedImage.TYPE_INT_RGB);
@@ -118,7 +119,7 @@ public class SteganografiProcessing {
 			pesan = new String(bytes, "UTF-8");
 			System.out.println( Arrays.toString(bytes));
 			System.out.println(pesan);
-			pesan = dekripsiASCII(pesan, kunci);
+			pesan = VigenereExtended.Dekrip(kunci, pesan);
 		} catch (Exception e) {
 
 		}
@@ -206,10 +207,12 @@ public class SteganografiProcessing {
 			pesan = new String(bytes, 1, panjang, "UTF-8");
 			System.out.println( Arrays.toString(bytes));
 			System.out.println(pesan);
-			pesan = dekripsiASCII(pesan, kunci);
+			pesan = VigenereExtended.Dekrip(kunci, pesan);
 		} catch (Exception e) {
 
 		}
+		//pesan = VigenereExtended.Dekrip(kunci, bit);
+
 		namaFile = "";
 		boolean found = false;
 		for (int i=0; i<pesan.length() && found==false; i++) {
@@ -297,7 +300,11 @@ public class SteganografiProcessing {
 		System.out.println(Integer.toBinaryString(panjang));
 		return panjang;
 	}
-
+	
+	private int CharToASCII(final char character){
+		return (int)character;
+	}
+	
 	public void sisipkanPesanLSBStandard(byte[] bytePesan) {
 		int nBit = bytePesan.length * 8;
 		String bit = toBinary(bytePesan);
@@ -501,35 +508,6 @@ public class SteganografiProcessing {
 			}
 		}
 
-	}
-
-	public static String enkripsiASCII(String plain, String kunci) {
-
-		int[] plainArr = new int[plain.length()];
-		for (int i = 0; i < plain.length(); i++) {
-			plainArr[i] = ((int) plain.charAt(i) + kunci.charAt(i
-					% kunci.length())) % 256;
-		}
-		String cipher = "";
-		for (int i = 0; i < plainArr.length; i++) {
-			cipher = cipher + Character.toString((char) (plainArr[i]));
-		}
-		System.out.println(cipher);
-		return cipher;
-	}
-
-	public static String dekripsiASCII(String cipher, String kunci) {
-
-		int[] cipherArr = new int[cipher.length()];
-		for (int i = 0; i < cipher.length(); i++) {
-			cipherArr[i] = Math.abs(((int) cipher.charAt(i) - kunci.charAt(i
-					% kunci.length()))) % 256;
-		}
-		String plain = "";
-		for (int i = 0; i < cipherArr.length; i++) {
-			plain = plain + Character.toString((char) (cipherArr[i]));
-		}
-		return plain;
 	}
 
 	private int getBitValue(int n, int location) {
