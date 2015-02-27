@@ -2,7 +2,6 @@ package edu.kuliah.kripto.tubessatu.nomerdua;
 
 import java.awt.EventQueue;
 
-import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -24,9 +23,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 import javax.swing.JScrollPane;
 
@@ -48,6 +47,7 @@ public class Nomer2 extends JFrame {
 	
 	//Program Properties
 	private File selectedFile;
+	private File inputFile;
 	private FourDiffLSBSteganography stegano;
 	File s;
 
@@ -101,25 +101,7 @@ public class Nomer2 extends JFrame {
 		        chooser.setFileFilter(filter);
 				int returnVal = chooser.showOpenDialog(Nomer2.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION){
-					if (selectedFile == null){
 						selectedFile = chooser.getSelectedFile();
-					} else { //get second image
-						s = chooser.getSelectedFile();
-						
-						try{
-						BufferedImage image1 = ImageIO.read(selectedFile);
-						BufferedImage image2 = ImageIO.read(s);
-						PSNR(image1, image2);
-						
-						//print(image);
-						//byte[][] matrix = getRGBMatrix(image, 0);//convertTo2DWithoutUsingGetRGB(image);
-						//print2DMatrix(matrix);
-					} catch (IOException ioe) {ioe.printStackTrace();}
-					}
-					
-					
-					textField.setText(selectedFile.getName());
-					textArea.setText("");
 				}
 			
 				
@@ -214,6 +196,27 @@ public class Nomer2 extends JFrame {
 		s = null;
 		stegano = new FourDiffLSBSteganography();
 		
+		
+		JButton btnInputFile = new JButton("Input File");
+		btnInputFile.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JFileChooser chooser = new JFileChooser("./");
+				int returnVal = chooser.showOpenDialog(Nomer2.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION){
+					inputFile = chooser.getSelectedFile();
+				}
+			}
+		});
+		
+		btnInputFile.setBounds(128, 49, 89, 23);
+		contentPane.add(btnInputFile);
+		
+		JButton btnOutputFile = new JButton("Output File");
+		btnOutputFile.setBounds(228, 49, 89, 23);
+		contentPane.add(btnOutputFile);
+		
+		
+		
 	}
 	
 	
@@ -224,11 +227,23 @@ public class Nomer2 extends JFrame {
 	        chooser.setFileFilter(filter);
 			if (chooser.showSaveDialog(Nomer2.this) == JFileChooser.APPROVE_OPTION){
 				
+				FileInputStream is;
 				try{
 					String text = textArea.getText();
 					String path = selectedFile.getPath();
 
-					if(stegano.encode(path, chooser.getSelectedFile().getPath() + (chooser.getSelectedFile().getName().endsWith(".png") ? "" : ".png"), text))
+					String key = textArea.getText();
+					
+					StandardVigenere cipher = new StandardVigenere();
+					
+					
+					is = new FileInputStream(inputFile);
+					byte[] input = new byte[(int) inputFile.length()];
+					is.read(input);
+					
+					byte[] encryptedData = cipher.doCrypt(StandardVigenere.ENCRYPT, input, key.getBytes());
+					
+					if(stegano.encodeAndSave(path, chooser.getSelectedFile().getPath(), inputFile.getName(), encryptedData))
 					{
 						JOptionPane.showMessageDialog(Nomer2.this, "The Image was encoded Successfully!", 
 							"Success", JOptionPane.INFORMATION_MESSAGE);
@@ -240,8 +255,10 @@ public class Nomer2 extends JFrame {
 							"Error", JOptionPane.INFORMATION_MESSAGE);
 					}
 					
+					is.close();
 				}
 				catch(Exception except) {
+					except.printStackTrace();
 					//msg if opening fails
 					JOptionPane.showMessageDialog(Nomer2.this,  
 		"The File cannot be opened!", 
@@ -251,8 +268,31 @@ public class Nomer2 extends JFrame {
 	}
 	
 	private void decode(){
-		String message = stegano.decode(selectedFile.getPath());
-		textArea.setText(message);
+		byte[][] message = stegano.decode(selectedFile.getPath());
+		JFileChooser chooser = new JFileChooser("./");
+		chooser.setSelectedFile(new File(new String(message[1])));
+		if (chooser.showSaveDialog(Nomer2.this) == JFileChooser.APPROVE_OPTION){
+			
+			try{
+				
+				String key = textArea.getText();
+				
+				StandardVigenere cipher = new StandardVigenere();
+				
+				byte[] decryptedData = cipher.doCrypt(StandardVigenere.DECRYPT, message[0], key.getBytes());
+				
+				FileOutputStream os = new FileOutputStream(chooser.getSelectedFile());
+				os.write(decryptedData);
+				os.close();
+			}
+			catch(Exception except) {
+				except.printStackTrace();
+				//msg if opening fails
+				JOptionPane.showMessageDialog(Nomer2.this,  
+	"The File cannot be opened!", 
+					"Error!", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
 	}
 	
 	public static double PSNR(BufferedImage img1, BufferedImage img2) {
