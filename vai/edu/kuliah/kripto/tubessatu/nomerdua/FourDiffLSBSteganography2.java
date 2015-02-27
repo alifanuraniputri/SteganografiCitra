@@ -1,3 +1,4 @@
+package edu.kuliah.kripto.tubessatu.nomerdua;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -8,7 +9,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
-public class FourDiffLSBSteganography{
+public class FourDiffLSBSteganography implements StringBitmapSteganography {
 
 	int imageWidth, imageHeight;
 	
@@ -28,6 +29,8 @@ public class FourDiffLSBSteganography{
 		return true;
 	}
 	
+	
+	@Override
 	public byte[] embed(byte[] message, byte[] image, int offset) {
 		if(32 + message.length + offset > image.length)
 		{
@@ -91,6 +94,7 @@ public class FourDiffLSBSteganography{
 		return image2;
 	}
 
+	@Override
 	public byte[] extract(byte[] image) {
 		int length = 0;
 		
@@ -166,7 +170,9 @@ public class FourDiffLSBSteganography{
 		return result;
 	}
 	
-	public boolean encodeAndSave(String imageFilepath, String outputFilepath, String message) {
+	
+	@Override
+	public boolean encode(String imageFilepath, String outputFilepath, String message) {
 		String			file_name 	= imageFilepath;
 		BufferedImage 	image_orig	= getImage(file_name);
 		
@@ -179,22 +185,8 @@ public class FourDiffLSBSteganography{
 		
 		return(setImage(image,new File(outputFilepath),"bmp"));
 	}
-	
-	public BufferedImage encode(String imageFilepath, String message) {
-		String			file_name 	= imageFilepath;
-		BufferedImage 	image_orig	= getImage(file_name);
-		
-		BufferedImage image = userSpace(image_orig);
-		imageWidth = image.getWidth();
-		imageHeight = image.getHeight();
-		
-		System.out.println("message " + message);
-		image = addText(image,message);
-		
-		return image;
-		//return(setImage(image,new File(outputFilepath),"bmp"));
-	}
 
+	@Override
 	public String decode(String imageFilepath) {
 		byte[] decode;
 		try
@@ -205,9 +197,7 @@ public class FourDiffLSBSteganography{
 			
 			
 			decode = extract(getByteData(image));
-			String result = new String(decode);
-			//String result = new String(decode,"UTF-8");
-			return(result);
+			return(new String(decode));
 		}
         catch(Exception e)
         {
@@ -266,11 +256,10 @@ public class FourDiffLSBSteganography{
 	private BufferedImage addText(BufferedImage image, String text)
 	{
 		byte img[]  = getByteData(image);
-		
+		byte msg[] = text.getBytes();
 		
 		try
 		{
-			byte msg[] = text.getBytes();//("UTF-8");
 			byte[] temp =  embed(msg, img, 0);
 			//temps doesnt hold reference to image, copy them manually to img
 			for(int i = 0; i < img.length; i++){

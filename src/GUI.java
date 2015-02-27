@@ -59,9 +59,9 @@ public class GUI extends JFrame {
 	private BufferedImage result;
 	private SteganografiProcessing stegano;
 	private FourDiffLSBSteganography stegano2;
-	private String pesan;
-	private String namaFile;
-	private String namaFileCitra;
+	private String pesan ="";
+	private String namaFile ="";
+	private String namaFileCitra ="";
 	private int mode = 1;
 	private final JButton btnSimpanPlain = new JButton("Simpan Plain Teks");
 	private final JScrollPane scrollPane = new JScrollPane();
@@ -72,6 +72,7 @@ public class GUI extends JFrame {
 	JFrame frameAsli = new JFrame("Citra Asli");
 	JLabel lblImageAsli = new JLabel("image");
 	File picture;
+	String kunci = "";
 
 	/**
 	 * Launch the application.
@@ -253,7 +254,7 @@ public class GUI extends JFrame {
 		contentPane.add(btnBandingkan);
 
 		frameAsli.setSize(320, 320);
-		frameAsli.setBounds(788, 100, 688, 556);
+		frameAsli.setBounds(688, 100, 350, 375);
 		JPanel panelAsli = new JPanel();
 		panelAsli.setForeground(Color.WHITE);
 		panelAsli.setBackground(new Color(255, 240, 245));
@@ -268,13 +269,13 @@ public class GUI extends JFrame {
 
 				lblImageAsli.setOpaque(true);
 				lblImageAsli.setForeground(new Color(255, 105, 180));
-				lblImageAsli.setBounds(30, 76, 310, 310);
+				lblImageAsli.setBounds(10, 10, 310, 310);
 				frameAsli.getContentPane().add(lblImageAsli);
 
 				lblImageAsli.setIcon(new ImageIcon(chosen.getScaledInstance(
 						lblImageAsli.getWidth(), lblImageAsli.getHeight(),
 						BufferedImage.TRANSLUCENT)));
-				getContentPane().add(lblImageAsli, BorderLayout.CENTER);
+				frameAsli.getContentPane().add(lblImageAsli, BorderLayout.CENTER);
 				lblImageAsli.setVisible(true);
 			}
 		});
@@ -385,20 +386,31 @@ public class GUI extends JFrame {
 	}
 
 	public void getPlainText(int mode) {
-		String kunci = textKey.getText();
+		kunci = textKey.getText();
 		if (!textKey.getText().equals("")) {
-			stegano = new SteganografiProcessing(chosen, kunci, namaFile);
+			stegano = new SteganografiProcessing(chosen, kunci);
 			stegano2 = new FourDiffLSBSteganography();
 			switch (mode) {
-			case 1: 
-				pesan = stegano.getPlainTextLSBstandard();
+			case 1:
+				if (chosen.getType()==BufferedImage.TYPE_BYTE_GRAY)
+					pesan = stegano.getPlainTextLSBstandard8bit();
+				else
+					pesan = stegano.getPlainTextLSBstandard();
 				namaFile = stegano.getNamaFile();
 				break;
-			case 2: 
-				decode(); 
+			case 2:
+				decode();
 				break;
 			case 3:
-				stegano.sisipkanLSBGhandarba();
+				try {
+					MainLogic ML = new MainLogic();
+					ML.readImage(chosen);
+					namaFile= ML.readStegoMessage("<ISI FILE>");
+		
+				} catch (Exception e) {
+					
+				}
+				break;
 			}
 			txtTeks.setText(pesan);
 			txtTeks.setEnabled(false);
@@ -408,23 +420,26 @@ public class GUI extends JFrame {
 	}
 
 	public void sisipkanPesan(int mode) {
-		String kunci = textKey.getText();
+		kunci = textKey.getText();
 		System.out.println(pesan);
 		if (pesan.length() != 0 && !textKey.getText().equals("")) {
-			if (((pesan.length() * namaFile.length()) * 8 + 11) <= (chosen
-					.getHeight() * chosen.getWidth() * 3)) {
+			
 
 				stegano = new SteganografiProcessing(chosen, kunci, pesan,
 						namaFile);
 				stegano2 = new FourDiffLSBSteganography();
 				switch (mode) {
 				case 1:
-					result = stegano.sisipkanLSBstandard();
+					if (chosen.getType()==BufferedImage.TYPE_BYTE_GRAY) {
+						result = stegano.sisipkanLSBstandard8bit();
+					}
+					else
+						result = stegano.sisipkanLSBstandard();
 					break;
 				case 2:
 					encode();
 					break;
-				case 3: {
+				case 3:
 					try {
 						MainLogic ML = new MainLogic();
 						ML.readImage(chosen);
@@ -437,18 +452,9 @@ public class GUI extends JFrame {
 
 						result = ML.writeImage();
 
-						/*
-						 * String str = ML.readStegoMessage("<ISI FILE>");
-						 * String str_filename = ML.readStegoMessage("-");
-						 * 
-						 * System.out.println("Filename tersimpan: "+str_filename
-						 * ); ML.writeBinarytoFile(str_filename+"-outfile",str);
-						 */
 					} catch (Exception e) {
 
 					}
-
-				}
 					break;
 				}
 				lblImage.setIcon(new ImageIcon(result.getScaledInstance(
@@ -461,11 +467,7 @@ public class GUI extends JFrame {
 				btnBandingkan.setEnabled(true);
 				btnEkstrakPesan.setEnabled(false);
 				btnSimpanCitra.setEnabled(true);
-			} else {
-				JOptionPane.showMessageDialog(getContentPane(),
-						"Pesan terlalu panjang untuk gambar yang dipilih");
-			}
-
+			
 		} else {
 			JOptionPane.showMessageDialog(getContentPane(),
 					"Pilih FIle, dan Kunci Tidak Kosong");
@@ -477,13 +479,17 @@ public class GUI extends JFrame {
 		System.out.println("Nomer 2, Encode Pesan: " + pesan);
 		String path = picture.getPath();
 		
-		result = stegano2.encode(path, pesan);
+		//pesan = SteganografiProcessing.enkripsiASCII(pesan, kunci);
+
+		result = stegano2.encode(path, pesan, "tes");
 	}
 
 	private void decode() {
 		String message = stegano2.decode(picture.getPath());
 		System.out.println("Nomer 2, Ekstrak Pesan: " + message);
+		
 		pesan = message;
+		//pesan = SteganografiProcessing.dekripsiASCII(message, kunci);
 	}
 
 	public void simpanPlain() {
@@ -532,8 +538,8 @@ public class GUI extends JFrame {
 			public void run() {
 				final JFileChooser fileChooser = new JFileChooser();
 				fileChooser.setApproveButtonText("Save");
-				FileFilter filter = new FileNameExtensionFilter("PNG (.png)",
-						"png");
+				FileFilter filter = new FileNameExtensionFilter("BMP(.bmp)",
+						"bmp");
 				fileChooser.setDialogTitle("Save Stegano Image");
 				fileChooser.setFileFilter(filter);
 
@@ -545,13 +551,13 @@ public class GUI extends JFrame {
 					// write it new file
 					try {
 						if (fileChooser.getSelectedFile().getAbsolutePath()
-								.contains(".png"))
-							ImageIO.write(result, "PNG", new File(fileChooser
+								.contains(".bmp"))
+							ImageIO.write(result, "BMP", new File(fileChooser
 									.getSelectedFile().getAbsolutePath()));
 						else
-							ImageIO.write(result, "PNG", new File(fileChooser
+							ImageIO.write(result, "BMP", new File(fileChooser
 									.getSelectedFile().getAbsolutePath()
-									+ ".png"));
+									+ ".bmp"));
 						JOptionPane.showMessageDialog(getContentPane(),
 								"citra berpesan terseimpan");
 					} catch (Exception e) {
@@ -1218,5 +1224,4 @@ class MainLogic {
 			e.printStackTrace();
 		}
 	}
-
 }

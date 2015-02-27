@@ -1,5 +1,3 @@
-
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
@@ -8,7 +6,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
-public class FourDiffLSBSteganography{
+public class FourDiffLSBSteganography {
 
 	int imageWidth, imageHeight;
 	
@@ -28,8 +26,9 @@ public class FourDiffLSBSteganography{
 		return true;
 	}
 	
-	public byte[] embed(byte[] message, byte[] image, int offset) {
-		if(32 + message.length + offset > image.length)
+	
+	public byte[] embed(byte[] messageFilename, byte[] message, byte[] image, int imageType, int offset) {
+		if(64 + messageFilename.length + message.length + offset > image.length)
 		{
 			System.out.println(image.length + " " + offset);
 			throw new IllegalArgumentException("File not long enough!");
@@ -40,25 +39,55 @@ public class FourDiffLSBSteganography{
 		//lastBlock[0] = {r,g,b}, lastBlock[1] = row, lastBlock[2] = col
 		int[] lastBlock = new int[]{0,0,0};
 		
-		//get rgb components, this assumes the image does have these components
-		byte[][] blue = getRGBMatrix(image, 0);
-		byte[][] green = getRGBMatrix(image, 1);
-		byte[][] red = getRGBMatrix(image, 2);
-
-		byte[] data = concat(bitConversion(message.length), message); //message length need to be saved for extraction purpose
+		byte[][] grey = new byte[][]{};
+		byte[][] alpha = new byte[][]{};
+		byte[][] blue = new byte[][]{};
+		byte[][] green = new byte[][]{};
+		byte[][] red = new byte[][]{};
+		
+		switch (imageType) {
+		case BufferedImage.TYPE_4BYTE_ABGR:
+			alpha = getARGBMatrix(image, 0);
+			blue = getARGBMatrix(image, 1);
+			green = getARGBMatrix(image, 2);
+			red = getARGBMatrix(image, 3);
+			break;
+		case BufferedImage.TYPE_3BYTE_BGR:
+			blue = getRGBMatrix(image, 0);
+			green = getRGBMatrix(image, 1);
+			red = getRGBMatrix(image, 2);
+			break;
+		default://anything else is assumed to be an 8-bit greyscale image
+			grey = getGreyMatrix(image);
+			break;
+		}
+		
+		byte[] data = concat(concat(bitConversion(messageFilename.length), messageFilename), concat(bitConversion(message.length), message)); //message length need to be saved for extraction purpose
 		
 		//byte of data to be embedded
 		int[] byteOffset = new int[]{0,7}; //begin from first byte and and leftmost bit
 		
+		byte[][] currentBlock = new byte[][]{};
 		while (byteOffset[0] < data.length){
 			//determine which block is the current block
-			byte[][] currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
+			
+			switch (imageType) {
+			case BufferedImage.TYPE_4BYTE_ABGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : lastBlock[0] == 2 ? red : alpha;
+				break;
+			case BufferedImage.TYPE_3BYTE_BGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
+				break;
+			default://anything else is assumed to be an 8-bit greyscale image
+				currentBlock = grey;
+				break;
+			}
+			
 			byte[] y = new byte[4];
 			y[0] = currentBlock[lastBlock[2]][lastBlock[1]];
 			y[1] = currentBlock[lastBlock[2]+1][lastBlock[1]];
 			y[2] = currentBlock[lastBlock[2]][lastBlock[1]+1];
 			y[3] = currentBlock[lastBlock[2]+1][lastBlock[1]+1];
-			
 			
 			//step 1
 			double d = avgDiff(y);
@@ -80,68 +109,103 @@ public class FourDiffLSBSteganography{
 				currentBlock[lastBlock[2]+1][lastBlock[1]] = yFinal[1];
 				currentBlock[lastBlock[2]][lastBlock[1]+1] = yFinal[2];
 				currentBlock[lastBlock[2]+1][lastBlock[1]+1] = yFinal[3];
+				
 			}
 			
 			//TODO
-			if (byteOffset[0] < data.length) lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight);
+			if (byteOffset[0] < data.length) lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight, imageType);
 		}
 		
 		//construct image from modified components
-		byte[] image2 = constructByteImageFromRGB(image.length, blue, green, red);
+		byte[] image2 = new byte[]{};
+		switch (imageType) {
+		case BufferedImage.TYPE_4BYTE_ABGR:
+			image2 = constructByteImageFromARGB(image.length, alpha, blue, green, red);
+			break;
+		case BufferedImage.TYPE_3BYTE_BGR:
+			image2 = constructByteImageFromRGB(image.length, blue, green, red);
+			break;
+		default://anything else is assumed to be an 8-bit greyscale image
+			image2 = constructByteImageFromGreyscale(image.length, grey);
+			break;
+		}
+		
 		return image2;
 	}
 
-	public byte[] extract(byte[] image) {
+	public byte[] extract(byte[] image, int imageType) {
 		int length = 0;
 		
 		int[] lastBlock = new int[]{0,0,0};
 		
-		byte[][] blue = getRGBMatrix(image, 0);
-		byte[][] green = getRGBMatrix(image, 1);
-		byte[][] red = getRGBMatrix(image, 2);
-
+		byte[][] grey = new byte[][]{};
+		byte[][] alpha = new byte[][]{};
+		byte[][] blue = new byte[][]{};
+		byte[][] green = new byte[][]{};
+		byte[][] red = new byte[][]{};
+		
+		switch (imageType) {
+		case BufferedImage.TYPE_4BYTE_ABGR:
+			alpha = getARGBMatrix(image, 0);
+			blue = getARGBMatrix(image, 1);
+			green = getARGBMatrix(image, 2);
+			red = getARGBMatrix(image, 3);
+			break;
+		case BufferedImage.TYPE_3BYTE_BGR:
+			blue = getRGBMatrix(image, 0);
+			green = getRGBMatrix(image, 1);
+			red = getRGBMatrix(image, 2);
+			break;
+		default://anything else is assumed to be an 8-bit greyscale image
+			grey = getGreyMatrix(image);
+			break;
+		}		
+		
 		int[] byteOffset = new int[]{0,0,0,0};
-		int numByteToExtract = 4;
-		byte[] yExtract = new byte[numByteToExtract];
 		
-		
-		//extract message length first
-		while (byteOffset[0] < numByteToExtract){
-			byte[][] currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
-			byte[] y = new byte[4];
-			y[0] = currentBlock[lastBlock[2]][lastBlock[1]];
-			y[1] = currentBlock[lastBlock[2]+1][lastBlock[1]];
-			y[2] = currentBlock[lastBlock[2]][lastBlock[1]+1];
-			y[3] = currentBlock[lastBlock[2]+1][lastBlock[1]+1];
-			
-			
-			//step 1
-			double d = avgDiff(y);
-			//step 2
-			int k = checkLevel(d);
-			//step 3
-			if (verifyErrorBlock(y, d)){
-				System.out.println("Current block is an error block, continue to next block");
-			} else { //Process this block
-				//buffer extracted bits from image
-				yExtract = extract(y, k, yExtract, numByteToExtract, byteOffset);
-			}
-			
-			if (byteOffset[0] < numByteToExtract) lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight);
-		}
-		
-		
+		byte[] yExtract = FourDiffLSB(4, byteOffset, lastBlock, grey, alpha, blue, green, red, imageType);	
 		length = reverseBitConversion(yExtract);
-		System.out.println("LENGTH: " + length);
+		System.out.println("FILENAME LENGTH: " + length);
 		
 		//preparation to extract message
 		byteOffset[0] = 0;
-		byte[] result = new byte[length];
-		numByteToExtract = length;
+		byte[] fileNameresult = FourDiffLSB(length, byteOffset, lastBlock, grey, alpha, blue, green, red, imageType);//FourDiffLSB(length, byteOffset, lastBlock, grey);//
+		System.out.println("FILENAME: " + new String(fileNameresult));
 		
+		byteOffset[0] = 0;
+		byte[] messageLengthResult = FourDiffLSB(4, byteOffset, lastBlock, grey, alpha, blue, green, red, imageType);//FourDiffLSB(4, byteOffset, lastBlock, grey);//
+		length = reverseBitConversion(messageLengthResult);
+		System.out.println("MESSAGE LENGTH: " + length);
 		
+		//preparation to extract message
+		byteOffset[0] = 0;
+		byte[] result = FourDiffLSB(length, byteOffset, lastBlock, grey, alpha, blue, green, red, imageType);//FourDiffLSB(length, byteOffset, lastBlock, grey);//
+		System.out.println("MESSAGE: " + new String(result));
+		
+		byte[][] ret = new byte[2][];
+		ret[0] = result;
+		ret[1] = fileNameresult;
+		
+		return result;
+	}
+	
+	private byte[] FourDiffLSB(int numByteToExtract, int[] byteOffset, int[] lastBlock, byte[][] grey, byte[][] alpha, byte[][] blue, byte[][] green, byte[][] red, int imageType){
+		byte[] result = new byte[numByteToExtract];
+		
+		byte[][] currentBlock = new byte[][]{};
 		while (byteOffset[0] < numByteToExtract){
-			byte[][] currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
+			switch (imageType) {
+			case BufferedImage.TYPE_4BYTE_ABGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : lastBlock[0] == 2 ? red : alpha;
+				break;
+			case BufferedImage.TYPE_3BYTE_BGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
+				break;
+			default://anything else is assumed to be an 8-bit greyscale image
+				currentBlock = grey;
+				break;
+			}
+			
 			byte[] y = new byte[4];
 			y[0] = currentBlock[lastBlock[2]][lastBlock[1]];
 			y[1] = currentBlock[lastBlock[2]+1][lastBlock[1]];
@@ -160,51 +224,49 @@ public class FourDiffLSBSteganography{
 				result = extract(y, k, result, numByteToExtract, byteOffset);
 			}
 			
-			if (byteOffset[0] < numByteToExtract) lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight);
+			if (byteOffset[0] < numByteToExtract) lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight, imageType);
 		}
 		
 		return result;
 	}
 	
-	public boolean encodeAndSave(String imageFilepath, String outputFilepath, String message) {
+	public BufferedImage encode(String imageFilepath, String messageFilename, String message) {
 		String			file_name 	= imageFilepath;
-		BufferedImage 	image_orig	= getImage(file_name);
 		
-		BufferedImage image = userSpace(image_orig);
+		BufferedImage image = getImage(file_name);
 		imageWidth = image.getWidth();
 		imageHeight = image.getHeight();
-		
-		System.out.println("message " + message);
-		image = addText(image,message);
-		
-		return(setImage(image,new File(outputFilepath),"bmp"));
-	}
 	
-	public BufferedImage encode(String imageFilepath, String message) {
-		String			file_name 	= imageFilepath;
-		BufferedImage 	image_orig	= getImage(file_name);
-		
-		BufferedImage image = userSpace(image_orig);
-		imageWidth = image.getWidth();
-		imageHeight = image.getHeight();
-		
 		System.out.println("message " + message);
-		image = addText(image,message);
+		System.out.println("message filename " + messageFilename);
+		image = addText(image,messageFilename, message);
 		
 		return image;
-		//return(setImage(image,new File(outputFilepath),"bmp"));
+	}
+	
+	public boolean encodeAndSave(String imageFilepath, String outputFilepath, String message) {
+		String			file_name 	= imageFilepath;
+		
+		BufferedImage image = getImage(file_name);
+		imageWidth = image.getWidth();
+		imageHeight = image.getHeight();
+	
+		System.out.println("message " + message);
+		String messageFilename = "tes.txt";
+		image = addText(image,messageFilename, message);
+		
+		return(setImage(image,new File(outputFilepath),"png"));
 	}
 
 	public String decode(String imageFilepath) {
 		byte[] decode;
 		try
 		{
-			BufferedImage image  = userSpace(getImage(imageFilepath));
+			BufferedImage image  = getImage(imageFilepath);
 			imageWidth = image.getWidth();
 			imageHeight = image.getHeight();
 			
-			
-			decode = extract(getByteData(image));
+			decode = extract(getByteData(image), image.getType());
 			return(new String(decode));
 		}
         catch(Exception e)
@@ -252,23 +314,16 @@ public class FourDiffLSBSteganography{
 		}
 	}
 	
-	private BufferedImage userSpace(BufferedImage image)
-	{
-		BufferedImage img  = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
-		Graphics2D    graphics = img.createGraphics();
-		graphics.drawRenderedImage(image, null);
-		graphics.dispose();
-		return img;
-	}
 	
-	private BufferedImage addText(BufferedImage image, String text)
+	private BufferedImage addText(BufferedImage image, String messageFilename, String text)
 	{
 		byte img[]  = getByteData(image);
 		byte msg[] = text.getBytes();
+		byte msgFilename[] = messageFilename.getBytes();
 		
 		try
 		{
-			byte[] temp =  embed(msg, img, 0);
+			byte[] temp =  embed(msgFilename, msg, img, image.getType(), 0);
 			//temps doesnt hold reference to image, copy them manually to img
 			for(int i = 0; i < img.length; i++){
 				img[i] = temp[i];
@@ -530,9 +585,22 @@ public class FourDiffLSBSteganography{
 		}
 		
 		//determine next block
-		private int[] next(int[] last,int step, int width, int height){
-			last[0]++;//blue, green, red order
-			if (last[0] >= 3){
+		//imageType maxima greyscale = 1, rgb = 3, argb = 4
+		private int[] next(int[] last,int step, int width, int height, int imageType){
+			int maxima;
+			switch (imageType) {
+			case BufferedImage.TYPE_4BYTE_ABGR:
+				maxima = 4;
+				break;
+			case BufferedImage.TYPE_3BYTE_BGR:
+				maxima = 3;
+				break;
+			default://anything else is assumed to be an 8-bit greyscale image
+				maxima = 1;
+			}
+			
+			last[0]++;//blue, green, red order, plus alpha of ARGB
+			if (last[0] >= maxima){
 				last[0] = 0;
 				
 				if (last[1]+step < width){
@@ -568,6 +636,37 @@ public class FourDiffLSBSteganography{
 	        }
 	        return result;
 		}
+		
+		private byte[][] getARGBMatrix(byte[] imagePixels, int argb){
+			byte[][] result = new byte[imageHeight][imageWidth];
+			int pixelLength = 4;//4 pixel components
+	        
+			for (int pixel = 0, row = 0, col = 0; pixel < imagePixels.length; pixel += pixelLength) {
+	           byte rgbByte = (byte) (imagePixels[pixel + argb] & 0x000000FF); 
+	           result[row][col] = rgbByte;
+	           col++;
+	           if (col == imageWidth) {
+	              col = 0;
+	              row++;
+	           }
+	        }
+	        return result;
+		}
+		
+		private byte[][] getGreyMatrix(byte[] imagePixels){
+			byte[][] result = new byte[imageHeight][imageWidth];
+	        
+			for (int pixel = 0, row = 0, col = 0; pixel < imagePixels.length; pixel++) {
+	           byte rgbByte = (byte) (imagePixels[pixel] & 0x000000FF); 
+	           result[row][col] = rgbByte;
+	           col++;
+	           if (col == imageWidth) {
+	              col = 0;
+	              row++;
+	           }
+	        }
+	        return result;
+		}
 	
 		//construct image byte array from rgn component extracted from above method
 		private byte[] constructByteImageFromRGB(int imageLength, byte[][] b, byte[][] g, byte[][] r){
@@ -585,5 +684,54 @@ public class FourDiffLSBSteganography{
 				}
 			}
 			return result;
+		}
+		
+		private byte[] constructByteImageFromARGB(int imageLength, byte[][] a, byte[][] b, byte[][] g, byte[][] r){
+			byte[] result = new byte[imageLength];
+			int pixelLength = 4;//4 pixel components
+			
+			for(int pixel = 0, row = 0, col = 0; pixel < imageLength ; pixel += pixelLength){
+				result[pixel] = a[row][col];
+				result[pixel + 1] = b[row][col];
+				result[pixel + 2] = g[row][col];
+				result[pixel + 3] = r[row][col];
+				col++;
+				if (col == imageWidth){
+					col = 0;
+					row++;
+				}
+			}
+			return result;
+		}
+		
+		private byte[] constructByteImageFromGreyscale(int imageLength, byte[][] g){
+			byte[] result = new byte[imageLength];
+			
+			for(int pixel = 0, row = 0, col = 0; pixel < imageLength ; pixel++){
+				result[pixel] = g[row][col];
+				col++;
+				if (col == imageWidth){
+					col = 0;
+					row++;
+				}
+			}
+			return result;
+		}
+		
+		public static void print2DBinary(byte[][] m){
+			for(int i = 0; i < m.length; i++){
+				for (int j = 0; j < m[i].length; j++){
+					System.out.print(String.format("%8s",Integer.toBinaryString((int) m[i][j])).replace(' ', '0') + ",");
+					//System.out.print((int) m[i][j] + ",");
+				}
+				System.out.println();
+			}
+		}
+		
+		public void printBinary(byte[] m){
+			for(int i = 0; i < m.length; i++){
+				//System.out.println((int) m[i]);
+				System.out.println(String.format("%8s",Integer.toBinaryString((int) m[i])).replace(' ', '0'));
+			}
 		}
 }
