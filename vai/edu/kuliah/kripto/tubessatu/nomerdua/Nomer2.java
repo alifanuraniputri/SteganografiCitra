@@ -2,6 +2,7 @@ package edu.kuliah.kripto.tubessatu.nomerdua;
 
 import java.awt.EventQueue;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -21,7 +22,12 @@ import edu.kuliah.kripto.tubessatu.nomerdua.FourDiffLSBSteganography;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.Raster;
 import java.io.File;
+import java.io.IOException;
+
 import javax.swing.JScrollPane;
 
 public class Nomer2 extends JFrame {
@@ -43,7 +49,7 @@ public class Nomer2 extends JFrame {
 	//Program Properties
 	private File selectedFile;
 	private FourDiffLSBSteganography stegano;
-	
+	File s;
 
 	/**
 	 * Launch the application.
@@ -91,11 +97,27 @@ public class Nomer2 extends JFrame {
 		btnOpenImage.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				JFileChooser chooser = new JFileChooser("./");
-				FileNameExtensionFilter filter=new FileNameExtensionFilter("Images", "bmp");//,"jpg","png");
+				FileNameExtensionFilter filter=new FileNameExtensionFilter("Images", "bmp", "jpg","png");
 		        chooser.setFileFilter(filter);
 				int returnVal = chooser.showOpenDialog(Nomer2.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION){
-					selectedFile = chooser.getSelectedFile();
+					if (selectedFile == null){
+						selectedFile = chooser.getSelectedFile();
+					} else { //get second image
+						s = chooser.getSelectedFile();
+						
+						try{
+						BufferedImage image1 = ImageIO.read(selectedFile);
+						BufferedImage image2 = ImageIO.read(s);
+						PSNR(image1, image2);
+						
+						//print(image);
+						//byte[][] matrix = getRGBMatrix(image, 0);//convertTo2DWithoutUsingGetRGB(image);
+						//print2DMatrix(matrix);
+					} catch (IOException ioe) {ioe.printStackTrace();}
+					}
+					
+					
 					textField.setText(selectedFile.getName());
 					textArea.setText("");
 				}
@@ -189,6 +211,7 @@ public class Nomer2 extends JFrame {
 		
 		//Properties initialization
 		selectedFile = null;
+		s = null;
 		stegano = new FourDiffLSBSteganography();
 		
 	}
@@ -205,7 +228,7 @@ public class Nomer2 extends JFrame {
 					String text = textArea.getText();
 					String path = selectedFile.getPath();
 
-					if(stegano.encode(path, chooser.getSelectedFile().getPath() + (chooser.getSelectedFile().getName().endsWith(".bmp") ? "" : ".bmp"), text))
+					if(stegano.encode(path, chooser.getSelectedFile().getPath() + (chooser.getSelectedFile().getName().endsWith(".png") ? "" : ".png"), text))
 					{
 						JOptionPane.showMessageDialog(Nomer2.this, "The Image was encoded Successfully!", 
 							"Success", JOptionPane.INFORMATION_MESSAGE);
@@ -225,43 +248,40 @@ public class Nomer2 extends JFrame {
 						"Error!", JOptionPane.INFORMATION_MESSAGE);
 				}
 			}
-			
-					/*
-		JFileChooser chooser = new JFileChooser();//"./");
-		FileNameExtensionFilter filter=new FileNameExtensionFilter("Images", "bmp", "jpg","png");
-        chooser.setFileFilter(filter);
-		if (chooser.showSaveDialog(GUI.this) == JFileChooser.APPROVE_OPTION){
-			
-			try{
-				String text = pesan;
-				String path = picture.getPath();//selectedFile.getPath();
-
-				if(stegano2.encode(path, chooser.getSelectedFile().getPath() + (chooser.getSelectedFile().getName().endsWith(".bmp") ? "" : ".bmp"), text))
-				{
-					JOptionPane.showMessageDialog(GUI.this, "The Image was encoded Successfully!", 
-						"Success", JOptionPane.INFORMATION_MESSAGE);
-				}
-				else
-				{
-					JOptionPane.showMessageDialog(GUI.this,  
-	"The Image could not be encoded!", 
-						"Error", JOptionPane.INFORMATION_MESSAGE);
-				}
-				
-			}
-			catch(Exception except) {
-				//msg if opening fails
-				JOptionPane.showMessageDialog(GUI.this,  
-	"The File cannot be opened!", 
-					"Error!", JOptionPane.INFORMATION_MESSAGE);
-			}
-		}
-		*/
-
 	}
 	
 	private void decode(){
 		String message = stegano.decode(selectedFile.getPath());
 		textArea.setText(message);
+	}
+	
+	public static double PSNR(BufferedImage img1, BufferedImage img2) {
+		if (img1.getType() != img2.getType() || img1.getHeight() != img2.getHeight() || img1.getWidth() != img2.getWidth()) return -1;
+
+		double mse = 0;
+		int width = img1.getWidth();
+		int height = img1.getHeight();
+	
+		//converst images to byte array, this way itll work the same for all image type
+		final byte[] pixels1 = ((DataBufferByte) img1.getRaster().getDataBuffer()).getData();
+		final byte[] pixels2 = ((DataBufferByte) img2.getRaster().getDataBuffer()).getData();
+		
+		
+		for(int i = 0; i < pixels1.length; i++){
+			mse += Math.pow((pixels1[i]&0x000000FF) - (pixels2[i]&0x000000FF), 2);
+		}
+		
+		mse /=  width * height;
+		double rms = Math.sqrt(mse);
+		
+		int maxVal = 255;
+		double x = maxVal / rms;
+		double psnr = 20.0 * logBase10(x);
+		System.out.println("PSNR: " + psnr);
+		return psnr;
+	}
+
+	public static double logBase10(double x) {
+		return Math.log(x) / Math.log(10);
 	}
 }
