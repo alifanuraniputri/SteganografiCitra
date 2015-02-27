@@ -15,7 +15,7 @@ import java.nio.charset.*;
 class PixelPosition {
 	public int x;
 	public int y;
-	public int[] color = new int[4];
+	public int[] color = new int[3];
 
 }
 
@@ -59,11 +59,11 @@ class PixelMapping {
 		}
 	}
 
-	public void insertPixel(int x, int y, int r, int g, int b, int a){
+	public void insertPixel(int x, int y, int r, int g, int b){
 		PixelPosition PP = new PixelPosition();
 		PP.x = x;
 		PP.y = y;
-		PP.color = new int[]{r,g,b,a};
+		PP.color = new int[]{r,g,b};
 
 		pixels.add(PP);
 	}
@@ -151,10 +151,15 @@ class MainLogic {
 	/* Pembacaan File */
 
 
-	public void readFiletoBinary(String infile, String key){
-		str_file="";
+	public void readFiletoBinary(String infile){
 		try {
-			//ke str dlu
+			//Baca file, setelah itu dienkrip, lalu dijadikan byte[] kembali
+			/*
+			try {
+				Path path = Paths.get(infile);
+				fileData = Files.readAllBytes(path);
+			} catch (Exception e){}
+			*/
 
 			FileInputStream in = null;
 		    String str="";
@@ -171,21 +176,31 @@ class MainLogic {
 		            in.close();
 		        }
 		    }
-
-		    str = VigenereExtended.Enkrip(key,str);
-		 	//System.out.println("Setelah enkrip-asli: "+str);
-
-		 	for (int i=0;i<str.length();i++){
-				str_file = str_file + String.format("%8s", Integer.toBinaryString( CharToASCII (str.charAt(i)) )).replace(' ', '0');
-			}
-
-			
-		 	//str_file = str;
+		 
+		 	str_file = str;
+		 	fileData = str.getBytes(Charset.forName("UTF-8"));
 	 	} catch (Exception e){}
 	}
 
 	private static int CharToASCII(final char character){
 		return (int)character;
+	}
+
+	public void debugByteInteger(){
+		System.out.println("EVALUATING...");
+		String hasil = "";
+		for (int i=0;i<str_file.length();i++){
+			hasil = hasil + String.format("%8s", Integer.toBinaryString( CharToASCII (str_file.charAt(i)) )).replace(' ', '0');
+		}
+		System.out.println("HASIL DEBUG: "+hasil);
+	}
+
+
+	public void writeBinarytoFile(String outfile){
+		try {
+			Path path = Paths.get(outfile);
+	    	Files.write(path, fileData); //creates, overwrites
+	    } catch (Exception e){e.printStackTrace();}
 	}
 
 	/* Konversi Binary String ke Binary Array and Vice Versa */
@@ -442,7 +457,7 @@ class MainLogic {
 		String msg;
 
 		if (file_name.equals("<ISI FILE>"))
-			msg = str_file;
+			msg = toBinary(fileData);
 		else{
 			byte[] encoded = file_name.getBytes(StandardCharsets.UTF_8);
 			msg = toBinary(encoded);
@@ -579,20 +594,7 @@ class MainLogic {
 
 	}
 
-	// Convert R, G, B, Alpha to standard 8 bit
-    private static int colorToRGB(int alpha, int red, int green, int blue) {
- 
-        int newPixel = 0;
-        newPixel += alpha;
-        newPixel = newPixel << 8;
-        newPixel += red; newPixel = newPixel << 8;
-        newPixel += green; newPixel = newPixel << 8;
-        newPixel += blue;
- 
-        return newPixel;
- 
-    }
-    
+
 	/*Image Processing */
 	public void writeImage(String outfile, String tipe){
 		try {
@@ -624,77 +626,19 @@ class MainLogic {
             for(int j=0; j<width; j++){
                Color c = new Color(image.getRGB(j, i));
                //System.out.println("Pos("+j+","+i+") ->   Red: " + c.getRed() +"  Green: " + c.getGreen() + " Blue: " + c.getBlue());
-               P.insertPixel(j,i,c.getRed(),c.getGreen(),c.getBlue(),c.getAlpha()); //disimpan
+               P.insertPixel(j,i,c.getRed(),c.getGreen(),c.getBlue()); //disimpan
             }
          }
          System.out.println("Selesai membaca image...");
       } catch (Exception e) {e.printStackTrace();}
 	}
 
-
-	/* File processing 
-	public void writeFile(String lokasi, String str_out) {
+	/* File processing */
+	public void writeBinarytoFile(String outfile, String binstring){
 		try {
-			FileOutputStream out = null;
-			String output_str = str_out;
-			try {
-	        	out = new FileOutputStream(lokasi);
-	         
-	        	for (int i=0;i<output_str.length();i++){
-	        		char c = output_str.charAt(i);
-	        		out.write((int)c);
-	        	}
-	      
-	      	}finally {
-	        	if (out != null) {
-	        		out.close();
-	        	}
-	     	}
-	     }catch (Exception e){} 
-	} */
-
-	public void writeFile(String lokasi, String inject_file, String key) throws Exception {
-		String plain="";
-		String token="";
-		boolean isDone=false;
-		int i=0;
-		while (!isDone) {
-			if (token.length() >= 8) {
-				plain = plain + (char)Integer.parseInt(token,2);
-				token = "";
-			}
-			else if (i >= inject_file.length()) {
-				isDone = true;
-			} else {
-				token = token + inject_file.charAt(i);
-				i++;
-			}
-		}
-
-		//System.out.println("String setelah diambil: "+plain);
-
-		FileOutputStream out = null;
-		String output_str = VigenereExtended.Dekrip(key,plain);
-
-		try {
-        	out = new FileOutputStream(lokasi);
-         
-        	for (int j=0;j<output_str.length();j++){
-        		char c = output_str.charAt(j);
-        		out.write((int)c);
-        	}
-         	/*
-        	int c;
-        	while ((c = in.read()) != -1) {
-        		str = str + ((char)c);
-        		out.write(c);
-        	}*/
-      
-      	}finally {
-        	if (out != null) {
-        		out.close();
-        	}
-     	}
+			Path path = Paths.get(outfile);
+	    	Files.write(path, fromBinary(binstring)); //creates, overwrites
+	    } catch (Exception e){e.printStackTrace();}
 	}
 
 }
@@ -710,7 +654,6 @@ public class MainApp {
 			System.setOut(out);
 
 			MainLogic ML = new MainLogic();
-			String key = "Alifa - Habibie - Rivai";
 
 			Scanner input = new Scanner(System.in);
 			System.out.print("File input (gambar): ");
@@ -720,10 +663,8 @@ public class MainApp {
 
 			System.out.print("File stego: ");
 			//String in = input.nextLine();
-			String in = "test.txt";
-			
-
-			ML.readFiletoBinary(in,key);
+			String in = "ajax.gif";
+			ML.readFiletoBinary(in);
 
 			ML.writeStegoMessage(in);
 			ML.writeStegoMessage("<ISI FILE>");
@@ -738,9 +679,9 @@ public class MainApp {
 			String str_filename = ML.readStegoMessage("-");
 
 			System.out.println("Filename tersimpan: "+str_filename);
-			ML.writeFile(str_filename+"-outfile",str,key);
+			ML.writeBinarytoFile(str_filename+"-outfile",str);
 
-			//ML.debugByteInteger();
+			ML.debugByteInteger();
 
 		}catch (Exception e){e.printStackTrace();}
 	}

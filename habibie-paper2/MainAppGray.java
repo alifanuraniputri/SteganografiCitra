@@ -79,6 +79,8 @@ class PixelMapping {
 				if (c == 'r'){
 					int red = PP.color[0];
 					PP.color[0] = modifyPixel(red,partialBinaryString); //red doang
+					PP.color[1] = PP.color[0];
+					PP.color[2] = PP.color[0];
 					System.out.println("P ("+x+","+y+") -> "+String.format("%8s", Integer.toBinaryString(PP.color[0])).replace(' ', '0')+" n: "+n_bit);	
 				} else if (c == 'g'){
 					int green = PP.color[1];
@@ -596,14 +598,13 @@ class MainLogic {
 	/*Image Processing */
 	public void writeImage(String outfile, String tipe){
 		try {
-			BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_INT_RGB);
-			WritableRaster raster = image.getRaster();
+			BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_BYTE_GRAY);
 			System.out.println("Menulis Image");
 			System.out.println("Height: "+height+" - Width: "+width);
 
 			for (int i=0; i<P.pixels.size(); i++) {
 				PixelPosition PPs = P.pixels.get(i);
-				raster.setPixel(PPs.x,PPs.y,PPs.color);
+				image.setRGB(PPs.x,PPs.y,colorToRGB(PPs.color[3],PPs.color[0],PPs.color[1],PPs.color[2]));
 			}
 
 			ImageIO.write(image,tipe,new File(outfile));
@@ -703,7 +704,7 @@ class MainLogic {
 //example.getBytes();
 //new String(bytes)
 
-public class MainApp {
+public class MainAppGray {
 	public static void main(String args[]){
 		try {
 			PrintStream out = new PrintStream(new FileOutputStream("output.txt"));
@@ -715,7 +716,7 @@ public class MainApp {
 			Scanner input = new Scanner(System.in);
 			System.out.print("File input (gambar): ");
 			//String lokasifile = input.nextLine();
-			String lokasifile = "baboon_face.png";
+			String lokasifile = "lena_gray.png";
 			ML.readImage(lokasifile);
 
 			System.out.print("File stego: ");
@@ -725,20 +726,20 @@ public class MainApp {
 
 			ML.readFiletoBinary(in,key);
 
-			ML.writeStegoMessage(in);
+			//ML.writeStegoMessage(in);
 			ML.writeStegoMessage("<ISI FILE>");
 
 			System.out.print("Nama file output: ");
 			//String outfile = input.nextLine();
-			String outfile = "baboon_face2.png"; //output gambar stego
+			String outfile = "lena_gray1.png"; //output gambar stego
 
 			ML.writeImage(outfile,"png");
 
 			String str = ML.readStegoMessage("<ISI FILE>");
-			String str_filename = ML.readStegoMessage("-");
+			//String str_filename = ML.readStegoMessage("-");
 
-			System.out.println("Filename tersimpan: "+str_filename);
-			ML.writeFile(str_filename+"-outfile",str,key);
+			//System.out.println("Filename tersimpan: "+str_filename);
+			ML.writeFile("habibie-outfile",str,key);
 
 			//ML.debugByteInteger();
 
