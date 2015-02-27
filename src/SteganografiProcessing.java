@@ -211,7 +211,6 @@ public class SteganografiProcessing {
 		} catch (Exception e) {
 
 		}
-		//pesan = VigenereExtended.Dekrip(kunci, bit);
 
 		namaFile = "";
 		boolean found = false;
