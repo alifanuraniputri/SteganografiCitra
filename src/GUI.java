@@ -71,6 +71,7 @@ public class GUI extends JFrame {
 	JFrame frameAsli = new JFrame("Citra Asli");
 	JLabel lblImageAsli = new JLabel("image");
 	File picture;
+	private File plainTextFile;
 	String kunci = "";
 	private final JButton btnAnalisisPnsr = new JButton("Analisis PSNR");
 
@@ -302,7 +303,7 @@ public class GUI extends JFrame {
 				// Configure some more here
 				final int userValue = fileChooser.showOpenDialog(fileChooser);
 				if (userValue == JFileChooser.APPROVE_OPTION) {
-					final File plainTextFile = fileChooser.getSelectedFile();
+					plainTextFile = fileChooser.getSelectedFile();
 					namaFile = plainTextFile.getName();
 					// if
 					// (filename.substring(filename.lastIndexOf("."),filename.length()).equals("txt"))
@@ -516,22 +517,75 @@ public class GUI extends JFrame {
 	}
 
 	private void encode() {
-		System.out.println("Nomer 2, Encode Pesan: " + pesan);
-		String path = picture.getPath();
+		System.out.println("Nomer 2, Encode Pesan: " + plainTextFile.getName());
+		System.out.println("Nomer 2, Pada Gambar: " + picture.getName());
+		System.out.println("Nomer 2, Kunci Kripto: " + kunci);
 		
-		//pesan = SteganografiProcessing.enkripsiASCII(pesan, kunci);
-
-		result = stegano2.encode(path, namaFile, pesan);
+		try{
+			FileInputStream is;
+			String path = picture.getPath();
+			
+			String key = kunci;
+			
+			StandardVigenere cipher = new StandardVigenere();
+			
+			
+			is = new FileInputStream(plainTextFile);
+			byte[] input = new byte[(int) plainTextFile.length()];
+			is.read(input);
+			
+			byte[] encryptedData = cipher.doCrypt(StandardVigenere.ENCRYPT, input, key.getBytes());
+			
+			
+			result = stegano2.encode(path, plainTextFile.getName(), encryptedData);
+			
+			is.close();
+		}
+		catch(Exception except) {
+			except.printStackTrace();
+			//msg if opening fails
+			JOptionPane.showMessageDialog(GUI.this,  
+"The File cannot be opened!", 
+				"Error!", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	private void decode() {
-		String[] res = stegano2.decode(picture.getPath());
-		System.out.println("Nomer 2, Ekstrak Pesan: " + res[0]);
-		System.out.println("Nomer 2, Nama File Pesan: " + res[1]);
+		System.out.println("Nomer 2, Ekstrak Pesan dari Gambar: " + picture.getName());
+		System.out.println("Nomer 2, Kunci Kripto: " + kunci);
 		
-		pesan = res[0];
-		namaFile = res[1];
-		//pesan = SteganografiProcessing.dekripsiASCII(message, kunci);
+		byte[][] message = stegano2.decode(picture.getPath());
+		JFileChooser chooser = new JFileChooser();
+		chooser.setSelectedFile(new File(new String(message[1])));
+		if (chooser.showSaveDialog(GUI.this) == JFileChooser.APPROVE_OPTION){
+			
+			try{
+				
+				String key = kunci;
+				
+				StandardVigenere cipher = new StandardVigenere();
+				
+				byte[] decryptedData = cipher.doCrypt(StandardVigenere.DECRYPT, message[0], key.getBytes());
+				
+				FileOutputStream os = new FileOutputStream(chooser.getSelectedFile());
+				os.write(decryptedData);
+				os.close();
+			}
+			catch(Exception except) {
+				except.printStackTrace();
+				//msg if opening fails
+				JOptionPane.showMessageDialog(GUI.this,  
+	"The File cannot be opened!", 
+					"Error!", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		
+		
+		System.out.println("Nomer 2, Hasil Ekstrak Pesan: " + message[0]);
+		System.out.println("Nomer 2, Hasil Nama File Pesan: " + message[1]);
+		
+		pesan = new String(message[0]);
+		namaFile = new String(message[1]);
 	}
 
 	public void simpanPlain() {

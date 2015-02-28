@@ -1,3 +1,4 @@
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
@@ -28,13 +29,6 @@ public class FourDiffLSBSteganography {
 	
 	
 	public byte[] embed(byte[] messageFilename, byte[] message, byte[] image, int imageType, int offset) {
-		if(64 + messageFilename.length + message.length + offset > image.length)
-		{
-			System.out.println(image.length + " " + offset);
-			throw new IllegalArgumentException("File not long enough!");
-		}
-	
-	
 		//variable to hold information about image block used in last iteration
 		//lastBlock[0] = {r,g,b}, lastBlock[1] = row, lastBlock[2] = col
 		int[] lastBlock = new int[]{0,0,0};
@@ -62,15 +56,61 @@ public class FourDiffLSBSteganography {
 			break;
 		}
 		
+		
 		byte[] data = concat(concat(bitConversion(messageFilename.length), messageFilename), concat(bitConversion(message.length), message)); //message length need to be saved for extraction purpose
 		
 		//byte of data to be embedded
 		int[] byteOffset = new int[]{0,7}; //begin from first byte and and leftmost bit
 		
 		byte[][] currentBlock = new byte[][]{};
+		
+		long capacity = 0;
+		//iterate over all block to determine how many byte can be embedded with these settings
+		while(lastBlock[2] != -1){
+			//determine which block is the current block
+			switch (imageType) {
+			case BufferedImage.TYPE_4BYTE_ABGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : lastBlock[0] == 2 ? red : alpha;
+				break;
+			case BufferedImage.TYPE_3BYTE_BGR:
+				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : red;
+				break;
+			default://anything else is assumed to be an 8-bit greyscale image
+				currentBlock = grey;
+				break;
+			}
+			
+			byte[] y = new byte[4];
+			y[0] = currentBlock[lastBlock[2]][lastBlock[1]];
+			y[1] = currentBlock[lastBlock[2]+1][lastBlock[1]];
+			y[2] = currentBlock[lastBlock[2]][lastBlock[1]+1];
+			y[3] = currentBlock[lastBlock[2]+1][lastBlock[1]+1];
+			
+			//step 1
+			double d = avgDiff(y);
+			//step 2
+			int k = checkLevel(d);
+			//step 3
+			if (verifyErrorBlock(y, d)){
+				System.out.println("Current block is an error block, continue to next block");
+			} else { //Process this block
+				capacity += (k*4);
+			}
+			
+			lastBlock = next(lastBlock, (int)Math.sqrt(4), imageWidth, imageHeight, imageType);
+		}
+		System.out.println("CAPACITY: " + capacity/8);
+		
+		if(8 + messageFilename.length + message.length + offset > capacity)
+		{
+			System.out.println(image.length + " " + offset);
+			throw new IllegalArgumentException("File not long enough!");
+		}
+		
+		lastBlock = new int[]{0,0,0};
+		
 		while (byteOffset[0] < data.length){
 			//determine which block is the current block
-			
 			switch (imageType) {
 			case BufferedImage.TYPE_4BYTE_ABGR:
 				currentBlock = lastBlock[0] == 0 ? blue : lastBlock[0] == 1 ? green : lastBlock[0] == 2 ? red : alpha;
@@ -231,7 +271,8 @@ public class FourDiffLSBSteganography {
 		return result;
 	}
 	
-	public BufferedImage encode(String imageFilepath, String messageFilename, String message) {
+	
+	public BufferedImage encode(String imageFilepath, String messageFilename, byte[] message) {
 		String			file_name 	= imageFilepath;
 		
 		BufferedImage image = getImage(file_name);
@@ -239,13 +280,14 @@ public class FourDiffLSBSteganography {
 		imageHeight = image.getHeight();
 	
 		System.out.println("message " + message);
+		System.out.println("message length " + message.length);
 		System.out.println("message filename " + messageFilename);
 		image = addText(image,messageFilename, message);
 		
 		return image;
 	}
 	
-	public boolean encodeAndSave(String imageFilepath, String outputFilepath, String message) {
+	public boolean encodeAndSave(String imageFilepath, String outputFilepath, String messageFilename, byte[] message) {
 		String			file_name 	= imageFilepath;
 		
 		BufferedImage image = getImage(file_name);
@@ -253,13 +295,13 @@ public class FourDiffLSBSteganography {
 		imageHeight = image.getHeight();
 	
 		System.out.println("message " + message);
-		String messageFilename = "tes.txt";
+		System.out.println("message length " + message.length);
 		image = addText(image,messageFilename, message);
 		
 		return(setImage(image,new File(outputFilepath),"png"));
 	}
 
-	public String[] decode(String imageFilepath) {
+	public byte[][] decode(String imageFilepath) {
 		byte[][] decode;
 		try
 		{
@@ -269,7 +311,7 @@ public class FourDiffLSBSteganography {
 			
 			decode = extract(getByteData(image), image.getType());
 			//decode[0] = message, decode[1] = fileName
-			return(new String[]{new String(decode[0]), new String(decode[1])});
+			return(new byte[][]{decode[0], decode[1]});
 		}
         catch(Exception e)
         {
@@ -277,7 +319,7 @@ public class FourDiffLSBSteganography {
 			JOptionPane.showMessageDialog(null, 
 				"There is no hidden message in this image!","Error",
 				JOptionPane.ERROR_MESSAGE);
-			return new String[]{"",""};
+			return new byte[][]{};
         }
 	}
 	
@@ -317,10 +359,10 @@ public class FourDiffLSBSteganography {
 	}
 	
 	
-	private BufferedImage addText(BufferedImage image, String messageFilename, String text)
+	private BufferedImage addText(BufferedImage image, String messageFilename, byte[] text)
 	{
 		byte img[]  = getByteData(image);
-		byte msg[] = text.getBytes();
+		byte msg[] = text;//text.getBytes();
 		byte msgFilename[] = messageFilename.getBytes();
 		
 		try
@@ -361,10 +403,10 @@ public class FourDiffLSBSteganography {
 	//reverse of above method
 	private int reverseBitConversion(byte[] i){
 		int result = 0;
-		result = result | (i[0] & 0xFF000000);
-		result = result | (i[1] & 0x00FF0000);
-		result = result | (i[2] & 0x0000FF00);
-		result = result | (i[3] & 0x000000FF);
+		result = (result | (i[0] & 0xFF)) << 8;
+		result = (result | (i[1] & 0xFF)) << 8;
+		result = (result | (i[2] & 0xFF)) << 8;
+		result = result | (i[3] & 0xFF);
 		return result;
 	}
 	
