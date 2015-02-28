@@ -109,6 +109,7 @@ class PixelMapping {
 				return temPx.substring(8-n,8);
 			}	
 		}
+		System.out.println("Tidak ditemukan: ("+x+","+y+"): "+n);
 		return "";
 	}
 
@@ -260,12 +261,12 @@ class MainLogic {
 			
 
 			while (!isDone){
-				if (max_width > max_value){
+				if (max_width > max_value - 2){
 					max_width = 2;
 					min_width = 0;
 					min_height+=3;
 					max_height+=3;
-				} else if (max_height > max_value) isDone = true;
+				} else if (max_height > max_value - 2) isDone = true;
 				else{
 					int pxSignature = P.getPixel(max_width,max_height,'r'); //ambil bit ke-8
 					String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
@@ -366,8 +367,9 @@ class MainLogic {
 				}
 
 			}
-			readBinaryMsg = readBinaryMsg.substring(0,byte_count);
+			//readBinaryMsg = readBinaryMsg.substring(0,byte_count);
 			System.out.println("Biner terbaca: "+readBinaryMsg);
+			System.out.println("Panjang terbaca: "+readBinaryMsg.length());
 
 			if (type.equals("<ISI FILE>"))
 				return readBinaryMsg;
@@ -465,12 +467,12 @@ class MainLogic {
 
 		while (!isStegoDone){
 			
-			if (max_width > max_value){
+			if (max_width > max_value - 2){
 				max_width = 2;
 				min_width = 0;
 				min_height+=3;
 				max_height+=3;
-			} else if (max_height > max_value-1) {
+			} else if (max_height > max_value - 2) {
 				isStegoDone = true;
 				System.out.println("Pesan stego melebihi batas ukuran");
 			}
@@ -706,40 +708,52 @@ class MainLogic {
 public class MainApp {
 	public static void main(String args[]){
 		try {
-			PrintStream out = new PrintStream(new FileOutputStream("output.txt"));
+			int pil = 2;
+			PrintStream out = new PrintStream(new FileOutputStream("output.txt"+pil));
 			System.setOut(out);
 
-			MainLogic ML = new MainLogic();
-			String key = "Alifa - Habibie - Rivai";
-
-			Scanner input = new Scanner(System.in);
-			System.out.print("File input (gambar): ");
-			//String lokasifile = input.nextLine();
-			String lokasifile = "baboon_face.png";
-			ML.readImage(lokasifile);
-
-			System.out.print("File stego: ");
-			//String in = input.nextLine();
-			String in = "test.txt";
 			
+			String key = "Alifa - Habibie - Rivai";
+			String outfile = "Lenna2.png"; //output gambar stego
 
-			ML.readFiletoBinary(in,key);
+			if (pil == 1){
+				MainLogic ML = new MainLogic();
+				
 
-			ML.writeStegoMessage(in);
-			ML.writeStegoMessage("<ISI FILE>");
+				Scanner input = new Scanner(System.in);
+				System.out.print("File input (gambar): ");
+				//String lokasifile = input.nextLine();
+				String lokasifile = "Lenna.png";
+				ML.readImage(lokasifile);
 
-			System.out.print("Nama file output: ");
-			//String outfile = input.nextLine();
-			String outfile = "baboon_face2.png"; //output gambar stego
+				System.out.print("File stego: ");
+				//String in = input.nextLine();
+				String in = "in.zip";
+				
 
-			ML.writeImage(outfile,"png");
+				ML.readFiletoBinary(in,key);
 
-			String str = ML.readStegoMessage("<ISI FILE>");
-			String str_filename = ML.readStegoMessage("-");
+				ML.writeStegoMessage(in);
+				ML.writeStegoMessage("<ISI FILE>");
 
-			System.out.println("Filename tersimpan: "+str_filename);
-			ML.writeFile(str_filename+"-outfile",str,key);
+				System.out.print("Nama file output: ");
+				//String outfile = input.nextLine();
+				
 
+				ML.writeImage(outfile,"png");
+
+				System.out.println("Write Selesai");
+			} else {
+
+				MainLogic ML = new MainLogic();
+				ML.readImage(outfile);
+				String str = ML.readStegoMessage("<ISI FILE>");
+				String str_filename = ML.readStegoMessage("-");
+
+				System.out.println("Filename tersimpan: "+str_filename);
+				ML.writeFile(str_filename+"-outfile",str,key);
+				System.out.println("Read seelsai");
+			}
 			//ML.debugByteInteger();
 
 		}catch (Exception e){e.printStackTrace();}
