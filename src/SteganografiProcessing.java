@@ -30,8 +30,8 @@ public class SteganografiProcessing {
 		super();
 		this.citra = chosen;
 		this.kunci = kunci;
-		//this.pesan = VigenereExtended.Enkrip(kunci,(namaFile+'@'+pesan));
-		this.pesan = pesan;
+		this.pesan = VigenereExtended.Enkrip(kunci,(namaFile+'@'+pesan));
+		//this.pesan = pesan;
 		System.out.println(this.pesan);
 		this.seed = 0;
 		for (int i = 0; i < kunci.length(); i++) {
@@ -45,9 +45,21 @@ public class SteganografiProcessing {
 		try {
 			steganoCitra = new BufferedImage(citra.getWidth(), citra.getHeight(),
 					citra.getType());
-			byte[] bytePesan = pesan.getBytes();
+			byte[] bytePesan = pesan.getBytes("UTF-8");
 			sisipkanPanjangPesan(bytePesan.length);
 			sisipkanPesanLSBStandard(bytePesan);
+		} catch (Exception e) {}
+		return steganoCitra;
+	}
+	
+	public BufferedImage sisipkanLSBstandard8bit() {
+		System.out.println("8bit");
+		try {
+			steganoCitra = new BufferedImage(citra.getWidth(), citra.getHeight(),
+					BufferedImage.TYPE_BYTE_GRAY);
+			byte[] bytePesan = pesan.getBytes("UTF-8");
+			sisipkanPanjangPesan8bit(bytePesan.length);
+			sisipkanPesanLSBStandard8bit(bytePesan);
 		} catch (Exception e) {}
 		return steganoCitra;
 	}
@@ -58,6 +70,91 @@ public class SteganografiProcessing {
 		return pesan;
 	}
 
+	public String getPlainTextLSBstandard8bit() {
+		System.out.println("8bit");
+		int panjang = getPanjangPesan8bit();
+		System.out.println(panjang);
+		getPlainLSB8bit(panjang);
+		return pesan;
+	}
+	
+	public void getPlainLSB8bit(int panjang) {
+		String bit = "";
+		int nBit = panjang * 8;
+		Random rand = new Random(this.seed);
+		int max = steganoCitra.getHeight() * steganoCitra.getWidth();
+		int min = 32;
+		Set<Integer> acak = new LinkedHashSet<Integer>();
+		int[] lokasi = new int[nBit];
+
+		// generate random w/ seed
+		while (acak.size() < ( nBit)) {
+			Integer next = rand.nextInt((max - min) + 1) + min;
+			acak.add(next);
+		}
+		int count = 0;
+		for (int number : acak) {
+			lokasi[count] = number;
+			count++;
+		}
+		System.out.println(Arrays.toString(lokasi));
+		// ekstrak LSB
+		System.out.println("panjang: "+nBit);
+		for (int i = 0; i < lokasi.length; i++) {
+			int x = lokasi[i] % steganoCitra.getWidth();
+			int y = lokasi[i] / steganoCitra.getWidth();
+			int pixel = steganoCitra.getRGB(x, y);
+			
+			int red = (pixel >> 0) & 0x000000FF;
+			//System.out.print(Integer.toBinaryString(red));
+			// red
+			int bitPesan = getBitValue(red, 0);
+			//System.out.println(" "+bitPesan);
+			bit = bit + bitPesan;
+			
+		}
+		System.out.println(bit);
+		byte[] bytes = new BigInteger(bit, 2).toByteArray();
+		try {
+			pesan = new String(bytes, "UTF-8");
+			System.out.println( Arrays.toString(bytes));
+			System.out.println(pesan);
+			pesan = VigenereExtended.Dekrip(kunci, pesan);
+		} catch (Exception e) {
+
+		}
+		namaFile = "";
+		boolean found = false;
+		for (int i=0; i<pesan.length() && found==false; i++) {
+			if (pesan.charAt(i)=='.' || pesan.charAt(i)=='@') {
+				found =true;
+			}
+			if (found==false) {
+				namaFile = namaFile + pesan.charAt(i);
+			}
+			if (found==true) {
+				if (pesan.charAt(i)=='.') {
+					namaFile=namaFile+'.';
+					boolean foundpesan = false;
+					for (int j=(i+1) ; j<pesan.length() && foundpesan==false; j++) {
+						if (pesan.charAt(j)=='@') {
+							foundpesan =true;
+						}
+						if (foundpesan==false) {
+							namaFile = namaFile + pesan.charAt(j);
+						}
+						if (foundpesan==true) {
+							pesan = pesan.substring(j+1);
+						}
+					}
+				} else {
+						pesan = pesan.substring(i+1);
+				}
+			}
+		}
+		System.out.println(this.pesan);
+		System.out.println("nama : "+namaFile);
+	}
 
 	public void getPlainLSB(int panjang) {
 		String bit = "";
@@ -183,6 +280,26 @@ public class SteganografiProcessing {
 		return panjang;
 	}
 	
+	public int getPanjangPesan8bit() {
+		int panjang = 0;
+		int count = 0;
+		for (int i = 0; i < 32 && count < 32; i++) {
+			int x = i % steganoCitra.getWidth();
+			int y = i / steganoCitra.getWidth();
+			int pixel = steganoCitra.getRGB(x, y);
+			int red = (pixel >> 16) & 0x000000FF;
+
+			// red
+			int bitPanjangPesan = getBitValue(red, 0);
+			panjang = setBitValue(panjang, count, bitPanjangPesan);
+			count++;
+			
+			
+		}
+		System.out.println(Integer.toBinaryString(panjang));
+		return panjang;
+	}
+	
 	private int CharToASCII(final char character){
 		return (int)character;
 	}
@@ -264,6 +381,67 @@ public class SteganografiProcessing {
 	 
 	    }
 	 
+	public void sisipkanPesanLSBStandard8bit(byte[] bytePesan) {
+		int nBit = bytePesan.length * 8;
+		String bit = toBinary(bytePesan);
+		System.out.println(bit);
+		System.out.println(bit.length());
+		Random rand = new Random(this.seed);
+		int max = citra.getHeight() * citra.getWidth();
+		int min = 32;
+		Set<Integer> acak = new LinkedHashSet<Integer>();
+		int[] lokasi = new int[ nBit];
+
+		// generate random w/ seed
+		while (acak.size() < (nBit)) {
+			Integer next = rand.nextInt((max - min) + 1) + min;
+			acak.add(next);
+		}
+		int count = 0;
+		for (int number : acak) {
+			lokasi[count] = number;
+			count++;
+		}
+		System.out.println(Arrays.toString(lokasi));
+		// edit LSB
+		int numBit = 0;
+		for (int i = 0; i < lokasi.length; i++) {
+			int x = lokasi[i] % citra.getWidth();
+			int y = lokasi[i] / citra.getWidth();
+			int pixel = citra.getRGB(x, y);
+			int bitPanjangPesan = Character.getNumericValue(bit.charAt(i));
+			int red = (pixel >> 0) & 0x000000FF;
+			// red
+			System.out.print(Integer.toBinaryString(red) + " " + bitPanjangPesan + " ");
+			red = setBitValue(red, 0, bitPanjangPesan);
+			System.out.print(Integer.toBinaryString(red));
+			
+			numBit++;
+		
+			//int rgb = ((red&0x0ff)<<24) | ((red&0x0ff)<<16)|((red&0x0ff)<<8)|(red&0x0ff);
+			int rgb = colorToRGB(255,red,red,red);
+			
+			System.out.print(" "+ Integer.toBinaryString(rgb) +" ");
+
+			steganoCitra.setRGB(x, y, rgb);
+			
+			pixel = steganoCitra.getRGB(x, y);
+			System.out.print(" "+ Integer.toBinaryString(pixel) +" ");
+			//System.out.println(" tahu hasil "+ Integer.toBinaryString(red));
+			red = (pixel >> 0) & 0xFF;
+			System.out.println(" hasil "+ Integer.toBinaryString(red));
+		}
+/*
+		for (int i = 32; i < citra.getHeight() * citra.getWidth(); i++) {
+			if (!acak.contains(i)) {
+				int x = i % citra.getWidth();
+				int y = i / citra.getWidth();
+				steganoCitra.setRGB(x, y, citra.getRGB(x, y));
+			}
+		} */
+		System.out.println("done");
+	}
+
 	public void sisipkanPanjangPesan(int panjang) {
 		// panjang |= (1 << 31);
 		int widthX = citra.getWidth(), heightY = citra.getHeight();
@@ -298,6 +476,34 @@ public class SteganografiProcessing {
 						(((int) blue & 0xFF) << 0); // blue
 
 				steganoCitra.setRGB(j, i, newPixel);
+			}
+		}
+
+	}
+	
+	public void sisipkanPanjangPesan8bit(int panjang) {
+		// panjang |= (1 << 31);
+		System.out.println(panjang);
+		System.out.println(Integer.toBinaryString(panjang));
+		int widthX = citra.getWidth(), heightY = citra.getHeight();
+		int startX = 0, startY = 0;
+		int count = 0;
+		for (int i = startY; i < heightY && count < 32; i++) {
+			for (int j = startX; j < widthX && count < 32; j++) {
+				int pixel = citra.getRGB(j, i);
+				int bitPanjangPesan = getBitValue(panjang, count);
+				int red = (pixel >> 0) & 0x000000FF;
+				// red
+				red = setBitValue(red, 0, bitPanjangPesan);
+				count++;
+
+				
+				// new pixel
+				int rgb = (((int) red & 0xFF) << 24) | (((int) red & 0xFF) << 16) | // red
+						(((int) red & 0xFF) << 8) | // green
+						(((int) red & 0xFF) << 0);
+
+				steganoCitra.setRGB(j, i, rgb);
 			}
 		}
 
