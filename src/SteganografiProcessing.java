@@ -44,7 +44,7 @@ public class SteganografiProcessing {
 		//
 		try {
 			steganoCitra = new BufferedImage(citra.getWidth(), citra.getHeight(),
-					BufferedImage.TYPE_INT_RGB);
+					citra.getType());
 			byte[] bytePesan = pesan.getBytes("UTF-8");
 			sisipkanPanjangPesan(bytePesan.length);
 			sisipkanPesanLSBStandard(bytePesan);

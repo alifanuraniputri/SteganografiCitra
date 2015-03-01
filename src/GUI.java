@@ -254,7 +254,8 @@ public class GUI extends JFrame {
 		contentPane.add(btnBandingkan);
 		btnAnalisisPnsr.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				PSNR(chosen, result);
+				System.out.println(chosen.getType()+ " "+ result.getType());
+				JOptionPane.showMessageDialog(getContentPane(), Double.toString(PSNR(chosen, result)));
 			}
 		});
 		btnAnalisisPnsr.setEnabled(false);
