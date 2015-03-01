@@ -71,6 +71,7 @@ public class GUI extends JFrame {
 	JFrame frameAsli = new JFrame("Citra Asli");
 	JLabel lblImageAsli = new JLabel("image");
 	File picture;
+	private File plainTextFile;
 	String kunci = "";
 	private final JButton btnAnalisisPnsr = new JButton("Analisis PSNR");
 
@@ -303,7 +304,7 @@ public class GUI extends JFrame {
 				// Configure some more here
 				final int userValue = fileChooser.showOpenDialog(fileChooser);
 				if (userValue == JFileChooser.APPROVE_OPTION) {
-					final File plainTextFile = fileChooser.getSelectedFile();
+					plainTextFile = fileChooser.getSelectedFile();
 					namaFile = plainTextFile.getName();
 					// if
 					// (filename.substring(filename.lastIndexOf("."),filename.length()).equals("txt"))
@@ -427,7 +428,8 @@ public class GUI extends JFrame {
 					
 					pesan = dekripHabibie(ML.readStegoMessage("<ISI FILE>"),kunci); //encrypted
 					namaFile = ML.readStegoMessage("-");
-					
+					System.out.println("Pesan panjang: "+pesan.length());
+					System.out.println("Gak paham...");
 				} catch (Exception e) {
 					
 				}
@@ -457,6 +459,8 @@ public class GUI extends JFrame {
 				i++;
 			}
 		}
+		System.out.println("Pesan mau didekrip: "+plain.length());
+		System.out.println("Pesan mau didekrip: "+pesan.length());
 		return VigenereExtended.Dekrip(key,plain);
 	}
 
@@ -514,22 +518,75 @@ public class GUI extends JFrame {
 	}
 
 	private void encode() {
-		System.out.println("Nomer 2, Encode Pesan: " + pesan);
-		String path = picture.getPath();
+		System.out.println("Nomer 2, Encode Pesan: " + plainTextFile.getName());
+		System.out.println("Nomer 2, Pada Gambar: " + picture.getName());
+		System.out.println("Nomer 2, Kunci Kripto: " + kunci);
 		
-		//pesan = SteganografiProcessing.enkripsiASCII(pesan, kunci);
-
-		result = stegano2.encode(path, namaFile, pesan);
+		try{
+			FileInputStream is;
+			String path = picture.getPath();
+			
+			String key = kunci;
+			
+			StandardVigenere cipher = new StandardVigenere();
+			
+			
+			is = new FileInputStream(plainTextFile);
+			byte[] input = new byte[(int) plainTextFile.length()];
+			is.read(input);
+			
+			byte[] encryptedData = cipher.doCrypt(StandardVigenere.ENCRYPT, input, key.getBytes());
+			
+			
+			result = stegano2.encode(path, plainTextFile.getName(), encryptedData);
+			
+			is.close();
+		}
+		catch(Exception except) {
+			except.printStackTrace();
+			//msg if opening fails
+			JOptionPane.showMessageDialog(GUI.this,  
+"The File cannot be opened!", 
+				"Error!", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	private void decode() {
-		String[] res = stegano2.decode(picture.getPath());
-		System.out.println("Nomer 2, Ekstrak Pesan: " + res[0]);
-		System.out.println("Nomer 2, Nama File Pesan: " + res[1]);
+		System.out.println("Nomer 2, Ekstrak Pesan dari Gambar: " + picture.getName());
+		System.out.println("Nomer 2, Kunci Kripto: " + kunci);
 		
-		pesan = res[0];
-		namaFile = res[1];
-		//pesan = SteganografiProcessing.dekripsiASCII(message, kunci);
+		byte[][] message = stegano2.decode(picture.getPath());
+		JFileChooser chooser = new JFileChooser();
+		chooser.setSelectedFile(new File(new String(message[1])));
+		if (chooser.showSaveDialog(GUI.this) == JFileChooser.APPROVE_OPTION){
+			
+			try{
+				
+				String key = kunci;
+				
+				StandardVigenere cipher = new StandardVigenere();
+				
+				byte[] decryptedData = cipher.doCrypt(StandardVigenere.DECRYPT, message[0], key.getBytes());
+				
+				FileOutputStream os = new FileOutputStream(chooser.getSelectedFile());
+				os.write(decryptedData);
+				os.close();
+			}
+			catch(Exception except) {
+				except.printStackTrace();
+				//msg if opening fails
+				JOptionPane.showMessageDialog(GUI.this,  
+	"The File cannot be opened!", 
+					"Error!", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		
+		
+		System.out.println("Nomer 2, Hasil Ekstrak Pesan: " + message[0]);
+		System.out.println("Nomer 2, Hasil Nama File Pesan: " + message[1]);
+		
+		pesan = new String(message[0]);
+		namaFile = new String(message[1]);
 	}
 
 	public void simpanPlain() {
@@ -719,7 +776,7 @@ class PixelMapping {
 		}	
 	}
 
-	public String readStegoMessage(int x, int y, int n, char c) {
+	public String readStegoMessageUnit(int x, int y, int n, char c) {
 		for (int i=0; i<pixels.size(); i++){
 			if ((pixels.get(i).x == x) && (pixels.get(i).y == y)) {
 				String temPx;
@@ -731,10 +788,11 @@ class PixelMapping {
 				else
 					temPx = "";
 
-				System.out.println("P ("+x+","+y+") : "+temPx+" N : "+n);
+				//System.out.println("P ("+x+","+y+") : "+temPx+" N : "+n);
 				return temPx.substring(8-n,8);
 			}	
 		}
+		System.out.println("Kalau masuk sini, berarti gk ketemu di ("+x+","+y+") : "+n);
 		return "";
 	}
 
@@ -781,6 +839,7 @@ class MainLogic {
 		str_file="";
 		try {
 			String str;
+			System.out.println("String mau dienkrip: "+pesan.length());
 		    str = VigenereExtended.Enkrip(key,pesan);
 		 	//System.out.println("Setelah enkrip-asli: "+str);
 
@@ -788,7 +847,7 @@ class MainLogic {
 				str_file = str_file + String.format("%8s", Integer.toBinaryString( CharToASCII (str.charAt(i)) )).replace(' ', '0');
 			}
 
-			
+			System.out.println("String setelah dienrkip: "+str_file.length());
 		 	//str_file = str;
 	 	} catch (Exception e){}
 	}
@@ -838,13 +897,14 @@ class MainLogic {
 	}
 
 	public String readStegoMessage(String type){ //sementara jumlah biner yang harus diambil itu dihitung
+		int local_count=0;
 		try {
 			if (type.equals("<ISI FILE>"))
 				System.out.println("Membaca pesan stego (ISI FILE)...");
 			else 
 				System.out.println("Membaca pesan stego (JUDUL FILE)...");
 
-			int local_count=0;
+			
 			boolean isDone = false;
 
 			int min_width=0;
@@ -864,17 +924,17 @@ class MainLogic {
 			else
 				byte_count = readStegoSize(max_value-2);
 
-			System.out.println("Message Size: "+byte_count);
+			System.out.println("Message Size Read Stego Message: "+byte_count);
 
 			
 
 			while (!isDone){
-				if (max_width > max_value){
+				if (max_width > max_value-2){
 					max_width = 2;
 					min_width = 0;
 					min_height+=3;
 					max_height+=3;
-				} else if (max_height > max_value) isDone = true;
+				} else if (max_height > max_value-2) isDone = true;
 				else{
 					int pxSignature = P.getPixel(max_width,max_height,'r'); //ambil bit ke-8
 					String temPx = String.format("%8s", Integer.toBinaryString(pxSignature)).replace(' ', '0');
@@ -890,10 +950,14 @@ class MainLogic {
 										break;
 								}else {
 									if (!((h == max_height) && (w == max_width))) {
-										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,2,'r');
+										if (type.equals("<ISI FILE>")){
+											String am = P.readStegoMessageUnit(w,h,2,'r');
+											readBinaryMsg += am;
+											//System.out.println("X: "+w+" Y: "+h+" N: 2");
+											//assert(am.length() == 2);
+										}
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,2,'g');
+											readBinaryMsg += P.readStegoMessageUnit(w,h,2,'g');
 
 										local_count+=2;
 										//System.out.println("LocalCount: "+local_count);
@@ -910,10 +974,14 @@ class MainLogic {
 								}
 								else {
 									if (!((h == max_height) && (w == max_width))) {
-										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,3,'r');
+										if (type.equals("<ISI FILE>")){
+											String am = P.readStegoMessageUnit(w, h, 3, 'r');
+											readBinaryMsg += am;
+											//System.out.println("X: "+w+" Y: "+h+" N: 3");
+											//assert(am.length() == 3);
+										}
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,3,'g');
+											readBinaryMsg += P.readStegoMessageUnit(w,h,3,'g');
 
 										local_count+=3;
 										//System.out.println("LocalCount: "+local_count);
@@ -930,10 +998,14 @@ class MainLogic {
 								}
 								else {
 									if (!((h == max_height) && (w == max_width))) {
-										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,4,'r');
+										if (type.equals("<ISI FILE>")){
+											String am = P.readStegoMessageUnit(w,h,4,'r');
+											readBinaryMsg += am;
+											//System.out.println("X: "+w+" Y: "+h+" N: 4");
+											//assert(am.length() == 4);
+										}
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,4,'g');
+											readBinaryMsg += P.readStegoMessageUnit(w,h,4,'g');
 
 										local_count+=4;	
 										//System.out.println("LocalCount: "+local_count);
@@ -950,10 +1022,15 @@ class MainLogic {
 								}else {
 
 									if (!((h == max_height) && (w == max_width))) {
-										if (type.equals("<ISI FILE>"))
-											readBinaryMsg += P.readStegoMessage(w,h,5,'r');
+										if (type.equals("<ISI FILE>")) {
+											String am = P.readStegoMessageUnit(w,h,5,'r');
+											readBinaryMsg += am;
+											//System.out.println("X: "+w+" Y: "+h+" N: 5");
+											//System.out.println("Kalo errror: "+am);
+											//assert(am.length() == 5);
+										}
 										else
-											readBinaryMsg += P.readStegoMessage(w,h,5,'g');
+											readBinaryMsg += P.readStegoMessageUnit(w,h,5,'g');
 
 										local_count+=5;
 										//System.out.println("LocalCount: "+local_count);
@@ -975,8 +1052,9 @@ class MainLogic {
 				}
 
 			}
-			readBinaryMsg = readBinaryMsg.substring(0,byte_count);
-			System.out.println("Biner terbaca: "+readBinaryMsg);
+			//readBinaryMsg = readBinaryMsg.substring(0,byte_count);
+			System.out.println("Biner terbaca panjang: "+readBinaryMsg.length());
+			System.out.println("Local Count: "+local_count);
 
 			if (type.equals("<ISI FILE>"))
 				return readBinaryMsg;
@@ -1044,6 +1122,7 @@ class MainLogic {
 		int min_height=0;
 		int max_height=2;
 
+		System.out.println("Padahal sudah dirubah");
 		int max_value;
 		if (width > height) max_value = height;
 		else max_value = width;
@@ -1064,7 +1143,7 @@ class MainLogic {
 		else
 			writeStegoSize(msg_length,max_value,1);
 
-		System.out.println("Panjang Pesan: "+msg_length);
+		System.out.println("Panjang Pesan Write: "+msg_length);
 		//System.out.println("Biner terbaca: "+msg);
 		//System.out.println(bs.getBytes());
 
@@ -1074,12 +1153,12 @@ class MainLogic {
 
 		while (!isStegoDone){
 			
-			if (max_width > max_value){
+			if (max_width > max_value-2){
 				max_width = 2;
 				min_width = 0;
 				min_height+=3;
 				max_height+=3;
-			} else if (max_height > max_value-1) {
+			} else if (max_height > max_value-2) {
 				isStegoDone = true;
 				System.out.println("Pesan stego melebihi batas ukuran");
 			}
